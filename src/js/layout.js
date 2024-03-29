@@ -5,9 +5,9 @@ function saveLayout() {
     if (name.length > 0) {
         //name = name.replace(/ /g ,"_");
         clearTimeout(savetimer);
-        chrome.extension.sendRequest({saveState: true, layout_name : name}, function(res) {
+        chrome.runtime.sendMessage({saveState: true, layout_name : name}, async function(res) {
             document.getElementById("layouts").innerHTML = "<h3></h3>";
-            init();
+            await init();
         });
         document.getElementById('saveButton').style.color = '#0000FF';
         savetimer = setTimeout(function () {
@@ -22,7 +22,7 @@ function saveLayout() {
 let loadtimer;
 function loadLayout(txt) {
     clearTimeout(loadtimer);
-    chrome.extension.sendRequest({loadState: true, layout_name: txt});
+    chrome.runtime.sendMessage({loadState: true, layout_name: txt});
     loadtimer = setTimeout(function () {  }, 200);
 }
 
@@ -33,9 +33,9 @@ function clearLayout(txt) {
     }
     clearTimeout(cleartimer);
     //document.getElementById('clearButton').style.color='#0000FF';
-    chrome.extension.sendRequest({clearState:true, layout_name: txt}, function(){
+    chrome.runtime.sendMessage({clearState:true, layout_name: txt}, async function(){
         document.getElementById("layouts").innerHTML = "<h3></h3>";
-        init();
+        await init();
     });
     cleartimer = setTimeout(function() {
        // document.getElementById('clearButton').style.color='#777777';
@@ -71,35 +71,32 @@ function renderList(text) {
     linkList.appendChild(divTag);
 }
 
-function init() {
-    chrome.extension.sendRequest({listState: true}, function (res) {
-        let r = JSON.parse(res);
-        if (r !== undefined) {
-            for (let i = 0; i < r.length; i++) {
-                renderList(r[i]);
-            }
-            let links = document.getElementsByTagName("a");
-            for(let i =0; i < links.length; i++) {
-                links[i].addEventListener('click', function () {
-                    loadLayout(this.innerHTML);
-                });
-            }
-            let removelinks = document.getElementsByTagName("img");
-            for(let i =0; i < removelinks.length; i++) {
-                removelinks[i].addEventListener('click', function () {
-                    clearLayout(this.getAttribute("title"));
-                });
-            }
+async function init() {
+    let sendResult = await chrome.runtime.sendMessage({listState: true})
+    let r = JSON.parse(sendResult);
+    if (r !== undefined) {
+        for (let i = 0; i < r.length; i++) {
+            renderList(r[i]);
         }
-    });
+        let links = document.getElementsByTagName("a");
+        for(let i =0; i < links.length; i++) {
+            links[i].addEventListener('click', function () {
+                loadLayout(this.innerHTML);
+            });
+        }
+        let removelinks = document.getElementsByTagName("img");
+        for(let i =0; i < removelinks.length; i++) {
+            removelinks[i].addEventListener('click', function () {
+                clearLayout(this.getAttribute("title"));
+            });
+        }
+    }
 }
 
-window.addEventListener("load", function() {
-    init();
+window.addEventListener("load", async function() {
+    await init();
 });
 
 window.addEventListener("load", function() {
-    // document.getElementById("loadButton").addEventListener("click", loadLayout);
     document.getElementById("saveButton").addEventListener("click", saveLayout);
-    //document.getElementById("clearButton").addEventListener("click", clearLayout);
 });

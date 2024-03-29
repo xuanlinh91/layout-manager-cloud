@@ -1,33 +1,39 @@
 // Nguyen Xuan Linh 2024
 
-function loadLayoutKeys() {
-	let list = localStorage.getItem("windowstatesaver_state_keys");
-	if (list === null ){
-        list = "[]";
-    }
-    return JSON.parse(list);
+const isObjectEmpty = (objectName) => {
+	return Object.keys(objectName).length === 0
 }
 
-function clearKeys(txt) {
-	var list = loadLayoutKeys();
+async function loadLayoutKeys() {
+	let list = await chrome.storage.local.get("windowstatesaver_state_keys");
+	let listStateKeys = list["windowstatesaver_state_keys"];
+	if (listStateKeys == null){
+		listStateKeys = "[]";
+    }
+
+    return JSON.parse(listStateKeys);
+}
+
+async function clearKeys(txt) {
+	let list = await loadLayoutKeys();
     if (list === undefined) {
         list = [];
     }
-    var i = list.indexOf(txt);
+    let i = list.indexOf(txt);
     if(i !== -1) {
         list.splice(i, 1);
     }
-    localStorage.setItem("windowstatesaver_state_keys", JSON.stringify(list));
+    await chrome.storage.local.set("windowstatesaver_state_keys", JSON.stringify(list));
 }
 
-function loadWindows(originalWindowId, key) {
-	var windows = JSON.parse(localStorage.getItem('windowstatesaver_state'+key));
+async function loadWindows(originalWindowId, key) {
+	let windows = JSON.parse(await chrome.storage.local.get('windowstatesaver_state'+key));
 	if(windows === null)
 		return;
 	
-	for(var index = 0; index < windows.length; index++)
+	for(let index = 0; index < windows.length; index++)
 	{
-		var windowParams = {
+		let windowParams = {
 			left: windows[index].left,
 			top: windows[index].top,
 			width: windows[index].width,
@@ -38,9 +44,9 @@ function loadWindows(originalWindowId, key) {
 			
 		chrome.windows.create(windowParams, function (index) {
 			return function (window) {
-				for(var tabIndex = 0; tabIndex < windows[index].tabs.length; tabIndex++)
+				for(let tabIndex = 0; tabIndex < windows[index].tabs.length; tabIndex++)
 				{
-					var tabParams = {
+					let tabParams = {
 						windowId: window.id,
 						index: windows[index].tabs[tabIndex].index,
 						url: windows[index].tabs[tabIndex].url,
@@ -61,36 +67,40 @@ function loadWindows(originalWindowId, key) {
 }
 
 
-chrome.extension.onRequest.addListener(
-	function(request, sender, sendResponse) {
+chrome.runtime.onMessage.addListener(
+	async function(request, sender, sendResponse) {
 		if(request.saveState) {
-            var layout_keys = loadLayoutKeys();
-            var layout_key = request.layout_name;
+            let layout_keys = await loadLayoutKeys();
+            let layout_key = request.layout_name;
             if (layout_keys === undefined) {
                 layout_keys = [];
             }
             else {
                 layout_keys.push(layout_key);
             }
-            localStorage.setItem('windowstatesaver_state_keys', JSON.stringify(layout_keys));
 
-			chrome.windows.getAll({populate: true}, function (windows) {
-				localStorage.setItem('windowstatesaver_state'+ layout_key, JSON.stringify(windows));
+            await chrome.storage.local.set({'windowstatesaver_state_keys': JSON.stringify(layout_keys)});
+
+			chrome.windows.getAll({populate: true}, async function (windows) {
+				let key = 'windowstatesaver_state'+ layout_key
+				await chrome.storage.local.set({key: JSON.stringify(windows)});
 				sendResponse("OK");
 				console.log("Saving state.");
 			});
 		}
 		else if (request.listState) {
-            var keys = JSON.stringify(loadLayoutKeys());
+            let keys = JSON.stringify(await loadLayoutKeys());
+			console.log("keys to response")
+			console.log(keys)
             sendResponse(keys);
         }
         else if (request.clearState) {
-		    clearKeys(request.layout_name);
+		    await clearKeys(request.layout_name);
             sendResponse("Done");
         }
 		else if(request.loadState) {
-			chrome.windows.getCurrent(function (window) {
-				loadWindows(window.id, request.layout_name);
+			chrome.windows.getCurrent(async function (window) {
+				await loadWindows(window.id, request.layout_name);
 			});
 			sendResponse({});
 		}

@@ -1,6 +1,5 @@
 {
     "/dist/js/popup.js": "/dist/js/popup.js",
-    "/dist/background.js": "/dist/background.js",
     "/dist/images/close.png": "/dist/images/close.png",
     "/dist/images/icon_016.png": "/dist/images/icon_016.png",
     "/dist/images/icon_048.png": "/dist/images/icon_048.png",
@@ -8,5 +7,6 @@
     "/dist/manifest.json": "/dist/manifest.json",
     "/dist/popup.html": "/dist/popup.html",
     "/dist/js/layout.js": "/dist/js/layout.js",
-    "/dist/css/popup.css": "/dist/css/popup.css"
+    "/dist/css/popup.css": "/dist/css/popup.css",
+    "/dist/background.js": "/dist/background.js"
 }

@@ -1,14 +1,15 @@
 {
-  "manifest_version": 2,
+  "manifest_version": 3,
   "author": "Nguyen Xuan Linh",
   "name": "Layout Manager Cloud",
   "version": "1.0.0",
   "background": {
-    "scripts": [ "background.js" ]
+    "service_worker": "background.js",
+    "type": "module"
   },
   "description": "Save and load your chrome layout with cloud storage support",
-  "permissions": ["tabs"],
-  "browser_action": {
+  "permissions": ["tabs", "storage"],
+  "action": {
     "default_icon": {
       "128": "images/icon_128.png",
       "16": "images/icon_016.png",
