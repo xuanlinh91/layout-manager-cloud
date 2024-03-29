@@ -1,0 +1,29 @@
+{
+  "private": true,
+  "name": "layout-manager-cloud",
+  "version": "1.0.0",
+  "description": "Save and load your chrome layout with cloud storage support",
+  "scripts": {
+    "production": "cross-env NODE_ENV=production node_modules/webpack/bin/webpack.js --progress --env=production --config=node_modules/laravel-mix/setup/webpack.config.js",
+    "prod": "npm run production"
+  },
+  "dependencies": {
+    "cross-env": "^7.0.3",
+    "laravel-mix": "^6.0.49",
+    "postcss": "^8.4.38",
+    "sass": "^1.62.1",
+    "sass-loader": "^13.2.2",
+    "vue": "^3.3.1",
+    "vue-loader": "^17.1.1",
+    "vue-template-compiler": "^2.7.14"
+  },
+  "keywords": [
+    "chrome",
+    "extension",
+    "vuejs",
+    "webpack",
+    "laravelmix"
+  ],
+  "author": "Nguyen Xuan Linh",
+  "license": "ISC"
+}
