@@ -5,8 +5,6 @@
     "/dist/images/icon_048.png": "/dist/images/icon_048.png",
     "/dist/images/icon_128.png": "/dist/images/icon_128.png",
     "/dist/manifest.json": "/dist/manifest.json",
-    "/dist/popup.html": "/dist/popup.html",
-    "/dist/js/layout.js": "/dist/js/layout.js",
-    "/dist/css/popup.css": "/dist/css/popup.css",
-    "/dist/background.js": "/dist/background.js"
+    "/dist/index.html": "/dist/index.html",
+    "/dist/css/popup.css": "/dist/css/popup.css"
 }
