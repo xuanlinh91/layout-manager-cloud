@@ -7,7 +7,7 @@
           class="flex-none bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-gray-700 dark:text-gray-300">1.0.0</span>
       <button :disabled="loggingIn" v-if="!googleAccount" @click="loginGoogle"
               class="px-2 py-1 border flex gap-1 items-center border-emerald-200 dark:border-emerald-700 rounded-lg text-slate-700 dark:text-slate-200 hover:border-emerald-400 dark:hover:border-emerald-500 hover:text-slate-900 dark:hover:text-slate-300 hover:shadow transition duration-150">
-        <img class="w-6 h-6" src="https://www.svgrepo.com/show/475656/google-color.svg" loading="lazy"
+        <img class="w-6 h-6" src="/assets/google-color.svg" loading="lazy"
              alt="google logo">
         <span class="text-base">Login with Google</span>
         <svg v-if="loggingIn" aria-hidden="true" role="status"
@@ -23,7 +23,7 @@
       </button>
       <div v-if="googleAccount"
            class="px-2 py-1 border flex gap-1 border-emerald-200 dark:border-emerald-700 rounded-lg text-slate-700 dark:text-slate-200 hover:border-emerald-400 dark:hover:border-emerald-500 hover:text-slate-900 dark:hover:text-slate-300 hover:shadow transition duration-150">
-        <img class="w-6 h-6" src="https://www.svgrepo.com/show/475656/google-color.svg" loading="lazy"
+        <img class="w-6 h-6" src="/assets/google-color.svg" loading="lazy"
              alt="google logo">
         <span class="text-base truncate w-7/12">{{ googleAccount }}</span>
         <button @click="logOutGoogle" type="button"
@@ -52,8 +52,8 @@
         <!--                class="focus:outline-none text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded px-2 py-1 text-xs me-2 mb-2 dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">-->
         <!--          Upload db file-->
         <!--        </button>-->
-        <button @click="createDBFile" type="button"
-                class="focus:outline-none focus:ring-4 focus:ring-green-300 font-medium rounded text-xs me-2 mb-2">
+        <button type="button"
+                class="ml-auto focus:outline-none focus:ring-4 focus:ring-green-300 font-medium rounded text-xs mb-2">
           <a target="_blank" href="https://www.buymeacoffee.com/xuanlinh91">
             <img
                 src="https://img.buymeacoffee.com/button-api/?text=Donate&emoji=&slug=xuanlinh91&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff"
@@ -80,11 +80,11 @@
     </div>
     <div class="flow-root border-t-red-700">
       <ul role="list">
-        <li v-if="!layoutKeys.length" class="py-3 sm:py-4 hover:shadow-md hover:border border-gray-300 rounded-md p-2">
+        <li v-if="developerMode" class="py-3 sm:py-4 hover:shadow-md hover:border border-emerald-500 rounded-md p-2">
           <div class="flex justify-between items-center">
             <div class="flex flex-col gap-2 min-w-0 cursor-pointer">
               <p class="text-sm font-medium text-gray-900 truncate dark:text-white">
-                dummy layout
+                Sample layout
               </p>
               <div class="flex">
                 <span
@@ -99,7 +99,7 @@
             </div>
             <div class="action-btn">
               <button type="button"
-                      class="text-white bg-orange-600 hover:bg-orange-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-full text-sm p-1 text-center inline-flex items-center me-2 dark:bg-orange-600 dark:hover:bg-orange-700 dark:focus:ring-red-800 transform transition-transform duration-300 hover:scale-150">
+                      class="text-white bg-orange-600 hover:bg-orange-800 font-medium rounded-full text-sm p-1 text-center inline-flex items-center me-2 dark:bg-orange-600 dark:hover:bg-orange-700 transform transition-transform duration-300 hover:scale-150">
                 <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
                   <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
@@ -165,7 +165,7 @@ const googleToken = ref("")
 const googleAccount = ref("")
 const dbFileId = ref("")
 const loggingIn = ref(false)
-
+const developerMode = ref(true)
 const fileInput = ref(null)
 const dbFileName = "lmc-db.json"
 
@@ -521,6 +521,7 @@ async function loadWindows(key) {
 
 onMounted(() => {
   console.log("On mounted")
+  developerMode.value = import.meta.env.DEV
   if (localStorage.getItem('google_token')) {
     loginGoogle()
   }
