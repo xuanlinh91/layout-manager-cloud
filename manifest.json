@@ -7,17 +7,17 @@
   "permissions": ["tabs", "storage", "identity"],
   "action": {
     "default_icon": {
-      "128": "images/icon_128.png",
-      "16": "images/icon_016.png",
-      "48": "images/icon_048.png"
+      "128": "assets/icon_128.png",
+      "16": "assets/icon_016.png",
+      "48": "assets/icon_048.png"
     },
     "default_popup": "index.html",
     "default_title": "Layout Manager Cloud"
   },
   "icons": {
-    "128": "images/icon_128.png",
-    "16": "images/icon_016.png",
-    "48": "images/icon_048.png"
+    "128": "assets/icon_128.png",
+    "16": "assets/icon_016.png",
+    "48": "assets/icon_048.png"
   },
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzPZp05+njTQVyiMQXTcquwmhmskrLOUq134nxEOnO7Ch7+Tp9KsB8cWxUhOUrvyt+c11ENzY/c3TP1RBUns4eD+wTrGIxb7PVpUviCOcXZ6oEPNcbBDqnSN21vvjOGgr47UXBXZBeCfsnWoK3cu3sggaIBLUXeFTnu8odOYjTNQvLPoOGS/fNSbBFzrpXLW27JBJB2bb/EOWhesCm13mS7Fk/SLL5ph8I3VD8n3RdQcSDoQ9IMmWqDQrZHQU+KB2Zz6Pb5EOhrKskIpUUal5OXLZYfJ23XsPv4ZTRKv1ujQQvOGtgCpuqLrG0fMp1RRl/0MpXTDs1LSrqUYARdAfYwIDAQAB",
   "oauth2": {
