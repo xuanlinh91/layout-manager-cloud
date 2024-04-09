@@ -203,6 +203,8 @@ async function processFiles() {
       })
       .then((response) => {
         console.log(response.data)
+        // localStorage.setItem('db_file_id', data.id)
+        // dbFileId.value = data.id
       })
       .catch((error) => {
         console.log(error)
@@ -262,31 +264,6 @@ async function processFiles2() {
   //     .catch((error) => {
   //       console.log(error)
   //     })
-}
-
-async function createDBFile() {
-  let data = {
-    name: dbFileName
-  }
-
-  fetch(
-      'https://www.googleapis.com/drive/v3/files',
-      {
-        method: 'POST',
-        async: true,
-        headers: {
-          Authorization: 'Bearer ' + googleToken.value,
-          'Content-Type': 'application/json'
-        },
-        'contentType': 'json',
-        body: JSON.stringify(data)
-      })
-      .then((response) => response.json())
-      .then(function (data) {
-        console.log(data)
-        localStorage.setItem('db_file_id', data.id)
-        dbFileId.value = data.id
-      });
 }
 
 async function isDBFileExist() {
@@ -358,33 +335,6 @@ async function loginGoogle() {
         localStorage.setItem('google_account', accountInfo.email)
         googleAccount.value = accountInfo.email
         loggingIn.value = false
-      });
-}
-
-async function uploadDbFile() {
-  let data = {
-    name: dbFileName,
-    mimeType: "application/json"
-  }
-  let init = {
-    method: 'POST',
-    async: true,
-    headers: {
-      Authorization: 'Bearer ' + googleToken.value,
-      'Content-Type': 'application/json'
-    },
-    'contentType': 'json',
-    body: JSON.stringify(data)
-  };
-
-  fetch(
-      'https://www.googleapis.com//drive/v3/files?uploadType=media',
-      init)
-      .then((response) => response.json())
-      .then(function (data) {
-        console.log(data)
-        localStorage.setItem('db_file_id', data.id)
-        dbFileId.value = data.id
       });
 }
 
