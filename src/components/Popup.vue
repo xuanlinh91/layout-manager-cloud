@@ -28,7 +28,7 @@
         <img class="w-6 h-6" src="/assets/google-color.svg" loading="lazy"
              alt="google logo">
         <span class="text-base truncate w-7/12">{{ googleAccount }}</span>
-        <button v-if="!(syncingFromDrive || syncingToDrive)" @click="logOutGoogle" type="button"
+        <button v-if="(!syncingFromDrive && !syncingToDrive)" @click="logOutGoogle" type="button"
                 class="ml-auto px-2 py-1 text-xs font-medium text-center text-white bg-gray-700 rounded-lg hover:bg-gray-500 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 dark:focus:ring-gray-500">
           Sign out
         </button>
@@ -44,8 +44,14 @@
         </svg>
       </div>
       <div class="flex">
-        <button @click="exportLocalStorage" type="button" class="py-0 px-2 me-2 mb-2 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700 h-full">Export</button>
-        <button @click="openFileInput" type="button" class="py-0 px-2 me-2 mb-2 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700 h-full">Import</button>
+        <button @click="exportLocalStorage" type="button"
+                class="py-0 px-2 me-2 mb-2 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700 h-full">
+          Export
+        </button>
+        <button @click="openFileInput" type="button"
+                class="py-0 px-2 me-2 mb-2 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700 h-full">
+          Import
+        </button>
         <a target="_blank" href="https://www.buymeacoffee.com/xuanlinh91" class="h-9 ml-auto py-0.5">
           <img
               src="https://img.buymeacoffee.com/button-api/?text=Donate&emoji=&slug=xuanlinh91&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff"
@@ -65,7 +71,8 @@
     </div>
     <div class="flow-root border-t-red-700">
       <ul role="list">
-        <li v-if="developerMode && !layoutKeys.length" class="border border-transparent py-3 sm:py-4 hover:shadow-md hover:border hover:border-emerald-500 box-border rounded-md p-2">
+        <li v-if="developerMode && !layoutKeys.length"
+            class="border border-transparent py-3 sm:py-4 hover:shadow-md hover:border hover:border-emerald-500 box-border rounded-md p-2">
           <div class="flex justify-between items-center">
             <div class="flex flex-col gap-2 min-w-0 cursor-pointer">
               <p class="text-sm font-medium text-gray-900 truncate dark:text-white">
@@ -99,7 +106,8 @@
             </div>
           </div>
         </li>
-        <li v-if="syncingFromDrive" class="border border-transparent py-3 sm:py-4 animate-pulse hover:shadow-md hover:border hover:border-emerald-500 box-border rounded-md p-2">
+        <li v-if="syncingFromDrive"
+            class="border border-transparent py-3 sm:py-4 animate-pulse hover:shadow-md hover:border hover:border-emerald-500 box-border rounded-md p-2">
           <div class="flex justify-between items-center">
             <div class="flex flex-col gap-2 min-w-0 cursor-pointer">
               <div class="h-2.5 bg-gray-300 rounded-full dark:bg-gray-600 w-32 mb-2.5"></div>
@@ -171,9 +179,6 @@ const fileInput = ref(null)
 const dbFileName = "lmc-db.json"
 
 // TODO allow rename layout
-// TODO sync when import, delete, add new layout
-// TODO sync badge loading -> synced
-// TODO save file id
 // TODO khong cho thao tac khi dang sync
 
 function syncDataToDrive(fileId) {
@@ -196,7 +201,7 @@ function syncDataToDrive(fileId) {
   if (fileId) {
     // Replace file
     axios
-        .patch("https://www.googleapis.com/upload/drive/v3/files/" + fileId, formData, {
+        .patch("https://www.googleapis.com/upload/drive/v3/files/" + fileId + '?uploadType=multipart', formData, {
           headers: {
             Authorization: `Bearer ${googleToken.value}`
           },
@@ -229,7 +234,9 @@ function syncDataToDrive(fileId) {
 }
 
 async function logOutGoogle() {
-  // TODO confirm log out
+  if (!confirm("Signing out of your Google account will stop syncing data with Google Drive. Are you sure you want to proceed?")) {
+    return;
+  }
   await chrome.identity.removeCachedAuthToken({token: googleToken.value});
   fetch(
       'https://accounts.google.com/o/oauth2/revoke?token=' + googleToken.value)
@@ -239,6 +246,7 @@ async function logOutGoogle() {
         localStorage.removeItem('google_token')
         localStorage.removeItem('google_account')
         localStorage.removeItem('db_file_id')
+        localStorage.setItem('is_login', "false")
         googleToken.value = null
         googleAccount.value = null
         dbFileId.value = null
@@ -270,11 +278,14 @@ async function loginGoogle() {
       .then((response) => response.json())
       .then(async function (accountInfo) {
         console.log(accountInfo)
-        // TODO check scope va bat user login lai
+        // TODO Show permission error for scope
         localStorage.setItem('google_account', accountInfo.email)
         googleAccount.value = accountInfo.email
         loggingIn.value = false
-        await syncDataFromDrive(googleToken.value)
+        if (googleToken.value) {
+          await syncDataFromDrive(googleToken.value);
+        }
+        localStorage.setItem('is_login', "true")
       });
 }
 
@@ -304,18 +315,33 @@ const syncDataFromDrive = async (authToken) => {
       });
       const fileContent = await fileContentResponse.json();
       const fileContentJson = JSON.parse(fileContent);
-      if (fileContentJson['layoutKeys']) {
-        // TODO confirm sync
-        // if (!confirm("Do you want to sync with data from your google drive (local data will be overridden)?")) {
-        //   syncingFromDrive.value = false
-        //   return;
-        // }
 
-        layoutKeys.value = fileContentJson['layoutKeys'];
+      let mergeFlag = false
+      if (fileContentJson['layoutKeys']) {
+        const isLogin = localStorage.getItem('is_login')
+        if (isLogin && isLogin === 'true') {
+          // Replace local layoutKeys with fileContentJson['layoutKeys']
+          layoutKeys.value = fileContentJson['layoutKeys'];
+        } else if(layoutKeys.value.length) {
+          if (confirm("Existing layout data is found. Do you want to replace it with data from Google Drive?\nOK: Replace\nCancel: Merge")) {
+            layoutKeys.value = fileContentJson['layoutKeys'];
+          } else {
+            // Merge fileContentJson['layoutKeys'] with layoutKeys.value
+            layoutKeys.value.unshift(...fileContentJson['layoutKeys']);
+            fileContentJson['layoutKeys'] = layoutKeys.value;
+            mergeFlag = true
+          }
+        }
+
         // Update your Vue.js app state with fetched data
         Object.keys(fileContentJson).forEach(localStorageKey => {
           localStorage.setItem(localStorageKey, JSON.stringify(fileContentJson[localStorageKey]));
         });
+        console.log("complete sync from drive");
+
+        if (mergeFlag) {
+          syncDataToDrive(dbFileId.value);
+        }
       }
     } else {
       console.error("lmc-db.json not found in the Google Drive");
@@ -324,6 +350,7 @@ const syncDataFromDrive = async (authToken) => {
   } catch (error) {
     console.error("Error syncing data from Google Drive:", error);
   } finally {
+    console.log("syncingFromDrive.value: ", syncingFromDrive.value);
     syncingFromDrive.value = false
   }
 };
@@ -401,10 +428,10 @@ function importLocalStorage(event) {
 
     // Loop through localStorageData and set data to localStorage
     Object.keys(localStorageData).forEach(localStorageKey => {
-        localStorage.setItem(localStorageKey, JSON.stringify(localStorageData[localStorageKey]));
+      localStorage.setItem(localStorageKey, JSON.stringify(localStorageData[localStorageKey]));
     });
 
-    if (googleToken && dbFileId) {
+    if (googleToken.value && dbFileId.value) {
       syncDataToDrive(dbFileId.value);
     }
 
@@ -433,7 +460,9 @@ async function saveLayout() {
     localStorage.setItem('layoutKeys', JSON.stringify(layoutKeys.value))
     localStorage.setItem(key, JSON.stringify(windows))
     newLayout.value = ''
-    syncDataToDrive(dbFileId.value)
+    if (googleToken.value && dbFileId.value) {
+      syncDataToDrive(dbFileId.value);
+    }
   } else {
     alert("Please type a name for the layout!");
   }
@@ -448,13 +477,16 @@ async function clearLayout(layout) {
   layoutKeys.value.splice(index, 1);
   localStorage.setItem('layoutKeys', JSON.stringify(layoutKeys.value))
   localStorage.removeItem('layout_' + layout.name)
-  syncDataToDrive(dbFileId.value)
+  if (googleToken.value && dbFileId.value) {
+    syncDataToDrive(dbFileId.value);
+  }
 }
 
 function init() {
   let layoutKeysData = localStorage.getItem('layoutKeys')
   let localGoogleToken = localStorage.getItem('google_token')
   let localAccount = localStorage.getItem('google_account')
+
   console.log("layoutKeys", layoutKeysData)
 
   if (localGoogleToken != null) {
