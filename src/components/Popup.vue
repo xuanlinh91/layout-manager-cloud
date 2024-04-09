@@ -158,6 +158,7 @@
 import {ref, onMounted} from 'vue'
 import axios from "axios";
 import dayjs from "dayjs";
+import {google} from "googleapis";
 
 const layoutKeys = ref([{}])
 const newLayout = ref()
@@ -206,6 +207,61 @@ async function processFiles() {
       .catch((error) => {
         console.log(error)
       })
+}
+async function processFiles2() {
+  const jsonContent = {
+    "example": "dummy content"
+  };
+  const metadata = {
+    name: dbFileName,
+    mimeType: "application/json"
+  };
+  const jsonString = JSON.stringify(jsonContent);
+
+  // Create a file object from JSON string
+  const file = new Blob([jsonString], {type: 'application/json'});
+  file.name = dbFileName;
+
+
+  const formData = new FormData();
+  formData.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
+  formData.append("file", file);
+
+  google.options({
+    // All requests made with this object will use these settings unless overridden.
+    timeout: 1000,
+    headers: {
+      Authorization: `Bearer ${googleToken.value}`
+    }
+  });
+
+  const drive = google.drive({
+    version: 'v3',
+  });
+
+  const res = await drive.files.create({
+    requestBody: {
+      name: "lmc-db-test.json",
+      mimeType: 'application/json'
+    },
+    media: {
+      mimeType: 'application/json',
+      body: 'Hello World'
+    }
+  });
+
+  // axios
+  //     .post("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", formData, {
+  //       headers: {
+  //         Authorization: `Bearer ${googleToken.value}`
+  //       },
+  //     })
+  //     .then((response) => {
+  //       console.log(response.data)
+  //     })
+  //     .catch((error) => {
+  //       console.log(error)
+  //     })
 }
 
 async function createDBFile() {
@@ -480,7 +536,7 @@ async function loadWindows(key) {
   console.log("Load windows:", key)
   const currentWindow = await chrome.windows.getCurrent();
   let originalWindowId = currentWindow.id;
-  let windows = await localStorage.getItem('layout_' + key)
+  let windows = localStorage.getItem('layout_' + key)
   windows = JSON.parse(windows);
   if (windows === null)
     return;
