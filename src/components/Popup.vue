@@ -80,7 +80,7 @@
     </div>
     <div class="flow-root border-t-red-700">
       <ul role="list">
-        <li v-if="developerMode" class="py-3 sm:py-4 hover:shadow-md hover:border border-emerald-500 rounded-md p-2">
+        <li v-if="developerMode && !layoutKeys.length" class="py-3 sm:py-4 hover:shadow-md hover:border border-emerald-500 rounded-md p-2">
           <div class="flex justify-between items-center">
             <div class="flex flex-col gap-2 min-w-0 cursor-pointer">
               <p class="text-sm font-medium text-gray-900 truncate dark:text-white">
@@ -165,7 +165,7 @@ const googleToken = ref("")
 const googleAccount = ref("")
 const dbFileId = ref("")
 const loggingIn = ref(false)
-const developerMode = ref(true)
+const developerMode = ref(false)
 const fileInput = ref(null)
 const dbFileName = "lmc-db.json"
 
