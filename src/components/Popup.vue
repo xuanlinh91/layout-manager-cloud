@@ -5,7 +5,7 @@
       <div>
         <h5 class="text-2xl font-bold leading-none text-gray-900 dark:text-white mb-2">Layout Manager Cloud</h5>
         <span
-            class="w-fit bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-gray-700 dark:text-gray-300">1.0.0</span>
+            class="w-fit bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-gray-700 dark:text-gray-300">1.1.0</span>
       </div>
       <button :disabled="loggingIn" v-if="!googleAccount" @click="loginGoogle"
               class="px-2 py-1 border flex gap-1 items-center border-emerald-200 dark:border-emerald-700 rounded-lg text-slate-700 dark:text-slate-200 hover:border-emerald-400 dark:hover:border-emerald-500 hover:text-slate-900 dark:hover:text-slate-300 hover:shadow transition duration-150">
