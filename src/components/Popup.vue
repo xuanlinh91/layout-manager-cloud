@@ -43,6 +43,14 @@
               fill="#1C64F2"/>
         </svg>
       </div>
+      <div v-if="syncingFromDrive || syncingToDrive" class="flex items-center text-sm text-orange-500 rounded-lg dark:text-orange-500" role="alert">
+        <svg class="flex-shrink-0 inline w-4 h-4 me-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z"/>
+        </svg>
+        <div>
+          <span class="font-medium">Synchronizing to google drive, please do not close this extension popup!</span>
+        </div>
+      </div>
       <div class="flex">
         <button @click="exportLocalStorage" type="button"
                 class="py-0 px-2 me-2 mb-2 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700 h-full">
@@ -289,6 +297,12 @@ async function loginGoogle() {
       });
 }
 
+// Function to generate timestamp string
+function generateTimestamp() {
+  const now = new Date();
+  return now.toISOString();
+}
+
 const syncDataFromDrive = async (authToken) => {
   try {
     console.log("syncDataFromDrive")
@@ -319,18 +333,29 @@ const syncDataFromDrive = async (authToken) => {
       let mergeFlag = false
       if (fileContentJson['layoutKeys']) {
         const isLogin = localStorage.getItem('is_login')
-        if (isLogin && isLogin === 'true') {
+        if ((!isLogin || isLogin === 'false') && layoutKeys.value.length && !confirm("Existing layout data is found. Do you want to" +
+            " replace it with data from Google Drive?\nOK: Replace\nCancel: Merge")) {
+
+          // Merge fileContentJson['layoutKeys'] with layoutKeys.value
+          fileContentJson.layoutKeys.forEach(layout => {
+            // Check if the layout's name exists in layoutKeys.value
+            const existInLocalLayout = layoutKeys.value.find(localLayout => localLayout.name === layout.name);
+            if (existInLocalLayout) {
+              // Rename the layout's name by adding a timestamp
+              const newName = layout.name + '_' + generateTimestamp();
+              // Rename the key in fileContentJson
+              fileContentJson["layout_" + newName] = fileContentJson["layout_" + layout.name];
+              delete fileContentJson["layout_" + layout.name];
+              layout.name = newName
+            }
+          });
+
+          layoutKeys.value.unshift(...fileContentJson['layoutKeys']);
+          fileContentJson['layoutKeys'] = layoutKeys.value;
+          mergeFlag = true
+        } else {
           // Replace local layoutKeys with fileContentJson['layoutKeys']
           layoutKeys.value = fileContentJson['layoutKeys'];
-        } else if(layoutKeys.value.length) {
-          if (confirm("Existing layout data is found. Do you want to replace it with data from Google Drive?\nOK: Replace\nCancel: Merge")) {
-            layoutKeys.value = fileContentJson['layoutKeys'];
-          } else {
-            // Merge fileContentJson['layoutKeys'] with layoutKeys.value
-            layoutKeys.value.unshift(...fileContentJson['layoutKeys']);
-            fileContentJson['layoutKeys'] = layoutKeys.value;
-            mergeFlag = true
-          }
         }
 
         // Update your Vue.js app state with fetched data
@@ -447,6 +472,12 @@ function countTabs(jsonData) {
 async function saveLayout() {
   console.log("Save layout:", newLayout.value)
   if (newLayout.value.length > 0) {
+    const existInLocalLayout = layoutKeys.value.find(layout => layout.name === newLayout.value);
+    if (existInLocalLayout) {
+      alert("The layout name '" + newLayout.value + "' already exists. Please specify a different layout name.");
+      return;
+    }
+
     let windows = await chrome.windows.getAll({populate: true});
     const numberOfTab = countTabs(windows)
 
@@ -555,5 +586,6 @@ onMounted(() => {
     loginGoogle()
   }
   init()
+  chrome.runtime.connect();
 })
 </script>

@@ -4,7 +4,7 @@
   "name": "Layout Manager Cloud",
   "version": "1.1.0",
   "description": "Save and load your chrome layout with cloud storage support",
-  "permissions": ["tabs", "storage", "identity"],
+  "permissions": ["tabs", "identity"],
   "action": {
     "default_icon": {
       "128": "assets/icon_128.png",
