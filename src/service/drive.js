@@ -1,0 +1,173 @@
+// Function to create folder in Google Drive
+export async function createFolder(folderName, accessToken) {
+    const createFolderEndpoint = 'https://www.googleapis.com/drive/v3/files';
+
+    const folderMetadata = {
+        name: folderName,
+        mimeType: 'application/vnd.google-apps.folder'
+    };
+
+    const response = await fetch(createFolderEndpoint, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(folderMetadata)
+    });
+
+    const data = await response.json();
+    return data.id;
+}
+
+export async function deleteFile(fileId, accessToken){
+    try {
+        await fetch("https://www.googleapis.com/drive/v3/files/" + fileId, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            }
+        });
+    } catch (error) {
+        console.error('There was a problem with your fetch operation:', error);
+    }
+}
+
+async function uploadFile(folderId, uploadFile, accessToken){
+    const metadata = {
+        name: uploadFile.name,
+        mimeType: "application/json",
+        parents: [folderId]
+    };
+
+    // Create a file object from JSON string
+    const formData = new FormData();
+    formData.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
+    formData.append("file", uploadFile);
+
+    try {
+        const response = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            },
+            body: formData
+        });
+
+        const data = await response.json();
+        console.log(data);
+        return data.id;
+    } catch (error) {
+        console.error('There was a problem with your fetch operation:', error);
+    }
+}
+
+async function updateFile(folderId, fileId, uploadFile, accessToken){
+    const metadata = {
+        name: uploadFile.name,
+        mimeType: "application/json",
+        // parents: [folderId]
+    };
+
+    // Create a file object from JSON string
+    const formData = new FormData();
+    formData.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
+    formData.append("file", uploadFile);
+
+    try {
+        const response = await fetch("https://www.googleapis.com/upload/drive/v3/files/" + fileId + '?uploadType=multipart', {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            },
+            body: formData
+        });
+
+        const data = await response.json();
+        console.log(data);
+        return data.id;
+    } catch (error) {
+        console.error('There was a problem with your fetch operation:', error);
+    }
+}
+
+export async function checkFolderExist(folderName, accessToken){
+    const foldersResponse = await fetch('https://www.googleapis.com/drive/v3/files?q=mimeType="application/vnd.google-apps.folder"&name="' + folderName + '"', {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${accessToken}`
+        }
+    });
+    const foldersData = await foldersResponse.json();
+
+    let folderId;
+    if (foldersData.files.length > 0) {
+        folderId = foldersData.files[0].id;
+    }
+
+    return folderId
+}
+
+export async function getDriveFileContent(fileId, accessToken) {
+    if (fileId) {
+        const fileContentResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        return await fileContentResponse.json();
+    }
+}
+
+export async function downloadLayoutDataToStorage(fileId, fileName, accessToken){
+    let layoutContent = await getDriveFileContent(fileId, accessToken)
+    localStorage.setItem(fileName, JSON.stringify(layoutContent));
+}
+
+export async function listFolderJsonFiles(folderID, accessToken){
+    const endpoint = "https://www.googleapis.com/drive/v3/files?q='" + folderID + "'+in+parents&mimeType='application/json'"
+    const folderFiles = await fetch(endpoint, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${accessToken}`
+        }
+    });
+
+    const filesData = await folderFiles.json();
+    return filesData.files
+}
+export async function checkFileExist(fileName, accessToken){
+    const endpoint = "https://www.googleapis.com/drive/v3/files?q=name%3D%27" + fileName + "%27&fields=files(id)";
+    const fileCheckResponse = await fetch(endpoint, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${accessToken}`
+        }
+    });
+
+    const filesData = await fileCheckResponse.json();
+
+    let fileId;
+    if (filesData.files && filesData.files.length > 0) {
+        fileId = filesData.files[0].id;
+    }
+
+    return fileId
+}
+
+export async function persist(fileId, folderId, file, accessToken) {
+    console.log("Start persist: ", file.name)
+    if (fileId) {
+        // Replace file
+        fileId = await updateFile(folderId, fileId, file, accessToken)
+        console.log('File updated successfully. File ID:', fileId);
+    } else {
+        // Upload file to folder
+        fileId = await uploadFile(folderId, file, accessToken);
+        console.log('File uploaded successfully. File ID:', fileId);
+    }
+
+    return fileId
+}

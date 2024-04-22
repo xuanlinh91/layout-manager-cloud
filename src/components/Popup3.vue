@@ -275,12 +275,12 @@ const syncDataFromDrive = async (authToken) => {
       const fileContentJson = JSON.parse(fileContent);
 
       let mergeFlag = false
-      if (fileContentJson['layoutKeys']) {
+      if (fileContentJson['layout_keys']) {
         const isLogin = localStorage.getItem('is_login')
         if ((!isLogin || isLogin === 'false') && layoutKeys.value.length && !confirm("Existing layout data is found. Do you want to" +
             " replace it with data from Google Drive?\nOK: Replace\nCancel: Merge")) {
 
-          // Merge fileContentJson['layoutKeys'] with layoutKeys.value
+          // Merge fileContentJson['layout_keys'] with layoutKeys.value
           fileContentJson.layoutKeys.forEach(layout => {
             // Check if the layout's name exists in layoutKeys.value
             const existInLocalLayout = layoutKeys.value.find(localLayout => localLayout.name === layout.name);
@@ -294,12 +294,12 @@ const syncDataFromDrive = async (authToken) => {
             }
           });
 
-          layoutKeys.value.unshift(...fileContentJson['layoutKeys']);
-          fileContentJson['layoutKeys'] = layoutKeys.value;
+          layoutKeys.value.unshift(...fileContentJson['layout_keys']);
+          fileContentJson['layout_keys'] = layoutKeys.value;
           mergeFlag = true
         } else {
-          // Replace local layoutKeys with fileContentJson['layoutKeys']
-          layoutKeys.value = fileContentJson['layoutKeys'];
+          // Replace local layoutKeys with fileContentJson['layout_keys']
+          layoutKeys.value = fileContentJson['layout_keys'];
         }
 
         // Update your Vue.js app state with fetched data
@@ -352,8 +352,8 @@ async function getDbFileContent() {
 
 function generateUserData() {
   const localStorageData = {};
-  const layoutKeys = JSON.parse(localStorage.getItem('layoutKeys'));
-  localStorageData['layoutKeys'] = layoutKeys;
+  const layoutKeys = JSON.parse(localStorage.getItem('layout_keys'));
+  localStorageData['layout_keys'] = layoutKeys;
 
   // Loop through layoutKeys to get localStorage data for each layout
   layoutKeys.forEach(layoutKey => {
@@ -479,7 +479,7 @@ async function saveLayout() {
     }
     let key = 'layout_' + newLayout.value
     // Persist layout to localstorage
-    localStorage.setItem('layoutKeys', JSON.stringify(layoutKeys.value))
+    localStorage.setItem('layout_keys', JSON.stringify(layoutKeys.value))
     localStorage.setItem(key, JSON.stringify(windows))
     newLayout.value = ''
     if (googleToken.value && dbFileId.value) {
@@ -497,7 +497,7 @@ async function clearLayout(layout) {
 
   const index = layoutKeys.value.indexOf(layout);
   layoutKeys.value.splice(index, 1);
-  localStorage.setItem('layoutKeys', JSON.stringify(layoutKeys.value))
+  localStorage.setItem('layout_keys', JSON.stringify(layoutKeys.value))
   localStorage.removeItem('layout_' + layout.name)
   if (googleToken.value && dbFileId.value) {
     syncDataToDrive(dbFileId.value);
@@ -505,7 +505,7 @@ async function clearLayout(layout) {
 }
 
 function init() {
-  let layoutKeysData = localStorage.getItem('layoutKeys')
+  let layoutKeysData = localStorage.getItem('layout_keys')
   let localGoogleToken = localStorage.getItem('google_token')
   let localAccount = localStorage.getItem('google_account')
 
@@ -521,7 +521,7 @@ function init() {
 
   if (layoutKeysData == null) {
     layoutKeys.value = []
-    localStorage.setItem('layoutKeys', JSON.stringify(layoutKeys.value))
+    localStorage.setItem('layout_keys', JSON.stringify(layoutKeys.value))
   } else {
     layoutKeys.value = JSON.parse(layoutKeysData)
   }

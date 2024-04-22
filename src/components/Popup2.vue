@@ -43,9 +43,12 @@
               fill="#1C64F2"/>
         </svg>
       </div>
-      <div v-if="syncingToDrive" class="flex items-center text-sm text-orange-500 rounded-lg dark:text-orange-500" role="alert">
-        <svg class="flex-shrink-0 inline w-4 h-4 me-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
-          <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z"/>
+      <div v-if="syncingToDrive" class="flex items-center text-sm text-orange-500 rounded-lg dark:text-orange-500"
+           role="alert">
+        <svg class="flex-shrink-0 inline w-4 h-4 me-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
+             fill="currentColor" viewBox="0 0 20 20">
+          <path
+              d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z"/>
         </svg>
         <div>
           <span class="font-medium">Synchronizing to google drive!</span>
@@ -130,11 +133,11 @@
           </div>
         </li>
         <li class="border border-transparent py-3 sm:py-4 hover:shadow-md hover:border hover:border-emerald-500 rounded-md p-2"
-            v-for="layout in layoutKeys">
+            v-for="layout in layoutKeys" v-if="layoutKeys.length">
           <div class="flex items-center justify-between">
             <div @click="loadWindows(layout.name)" class="flex flex-col min-w-0 cursor-pointer gap-2">
-              <p class="text-sm font-medium text-gray-900 truncate dark:text-white">
-                {{ layout.name }}
+              <p v-if="layout.name" class="text-sm font-medium text-gray-900 truncate dark:text-white">
+                {{ layout.name.replace('layout_', '') }}
               </p>
               <div class="flex">
               <span
@@ -170,14 +173,24 @@
 </template>
 
 <script setup>
-import {ref, onMounted} from 'vue'
-import axios from "axios";
+import {onMounted, ref} from 'vue'
 import dayjs from "dayjs";
-import {generateTimestamp,countTabs} from "../helper/helper.js";
+import {countTabs, localStorageDataToBlob, splitOldNewLayout} from "../helper/helper.js";
+import {
+  checkFileExist,
+  checkFolderExist,
+  createFolder,
+  deleteFile,
+  getDriveFileContent,
+  listFolderJsonFiles,
+  persist
+} from "../service/drive.js";
 
 const layoutKeys = ref([{}])
 const newLayout = ref()
 const googleToken = ref("")
+const dbFileIds = ref({})
+const dbFolderId = ref("")
 const googleAccount = ref("")
 const dbFileId = ref("")
 const loggingIn = ref(false)
@@ -185,11 +198,50 @@ const syncingFromDrive = ref(false)
 const syncingToDrive = ref(false)
 const developerMode = ref(false)
 const fileInput = ref(null)
-const dbFileName = "lmc-db.json"
+const dbFolderName = "lmc-database"
 
 // TODO allow rename layout
 // TODO khong cho thao tac khi dang sync
 
+async function syncDataToDrive(folderId) {
+  console.log("syncDataToDrive")
+  syncingToDrive.value = true
+
+  if (!folderId) {
+    // Folder not exist, create new db folder on drive
+    folderId = await createFolder(dbFolderName, googleToken.value);
+    dbFolderId.value = folderId
+    localStorage.setItem('db_folder_id', folderId)
+
+    // Persist layout files
+    for (const layoutKey of layoutKeys.value) {
+      const file = localStorageDataToBlob(layoutKey.name)
+      dbFileIds.value[layoutKey.name] = await persist(null, folderId, file, googleToken.value)
+    }
+  } else {
+    // Folder exist
+    const {oldLayouts, newLayouts} = splitOldNewLayout(layoutKeys.value, dbFileIds.value)
+    // Replace old layouts
+    // for (const layout of oldLayouts) {
+    //   const layoutFileId = dbFileIds.value[layout.name]
+    //   const file = localStorageDataToBlob(layout.name)
+    //   await persist(layoutFileId, folderId, file, googleToken.value)
+    // }
+
+    // Upload new layouts & save file id
+    for (const layout of newLayouts) {
+      const file = localStorageDataToBlob(layout.name)
+      dbFileIds.value[layout.name] = await persist(null, folderId, file, googleToken.value)
+    }
+  }
+
+  // persist layoutKeys
+  const layoutKeyFile = localStorageDataToBlob("layout_keys")
+  dbFileIds.value["layout_keys"] = await persist(dbFileIds.value["layout_keys"], folderId, layoutKeyFile, googleToken.value)
+  localStorage.setItem('db_file_ids', JSON.stringify(dbFileIds.value))
+
+  syncingToDrive.value = false
+}
 
 async function logOutGoogle() {
   if (!confirm("Signing out of your Google account will stop syncing data with Google Drive. Are you sure you want to proceed?")) {
@@ -203,7 +255,8 @@ async function logOutGoogle() {
         console.log(res)
         localStorage.removeItem('google_token')
         localStorage.removeItem('google_account')
-        localStorage.removeItem('db_file_id')
+        localStorage.removeItem('db_file_ids')
+        localStorage.removeItem('db_folder_id')
         localStorage.setItem('is_login', "false")
         googleToken.value = null
         googleAccount.value = null
@@ -214,107 +267,126 @@ async function logOutGoogle() {
 async function loginGoogle() {
   console.log("Login Google")
   loggingIn.value = true
+  const firstLogin = !localStorage.getItem('is_login')
   let token = await chrome.identity.getAuthToken({interactive: true});
   console.log(token);
   localStorage.setItem('google_token', token.token)
   googleToken.value = token.token
 
-  // Set username
-  let init = {
-    method: 'GET',
-    async: true,
-    headers: {
-      Authorization: 'Bearer ' + googleToken.value,
-      'Content-Type': 'application/json'
-    },
-    'contentType': 'json'
-  };
+  const res = await fetch('https://www.googleapis.com/oauth2/v1/userinfo',
+      {
+        headers: {
+          Authorization: 'Bearer ' + googleToken.value,
+          'Content-Type': 'application/json'
+        },
+        'contentType': 'json'
+      })
 
-  fetch(
-      'https://www.googleapis.com/oauth2/v1/userinfo',
-      init)
-      .then((response) => response.json())
-      .then(async function (accountInfo) {
-        console.log(accountInfo)
-        // TODO Show permission error for scope
-        localStorage.setItem('google_account', accountInfo.email)
-        googleAccount.value = accountInfo.email
-        loggingIn.value = false
-        if (googleToken.value) {
-          await syncDataFromDrive(googleToken.value);
-        }
-        localStorage.setItem('is_login', "true")
-      });
+  const accountInfo = await res.json()
+  console.log(accountInfo)
+  // TODO Show permission error for scope
+  localStorage.setItem('google_account', accountInfo.email)
+  googleAccount.value = accountInfo.email
+  loggingIn.value = false
+  let folderId = await checkFolderExist(dbFolderName, googleToken.value);
+  if (!folderId && layoutKeys.value.length) {
+    await syncDataToDrive(googleToken.value);
+  } else if (folderId) {
+    dbFolderId.value = folderId
+    localStorage.setItem('db_folder_id', folderId)
+    await syncDataFromDrive(googleToken.value);
+  }
+  // if (googleToken.value && firstLogin) {
+  //   await syncDataFromDrive(googleToken.value);
+  // }
+  localStorage.setItem('is_login', "true");
+}
+
+function mergeCloudAndLocal(){
+
+}
+
+function extractLayoutName(fileName) {
+  return fileName.replace('.json', '');
 }
 
 const syncDataFromDrive = async (authToken) => {
   try {
     console.log("syncDataFromDrive")
     syncingFromDrive.value = true
-    // Make API request to fetch lmc-db.json using the authToken
-    const response = await fetch('https://www.googleapis.com/drive/v3/files?q=name%3D%27lmc-db.json%27&fields=files(id)', {
-      headers: {
-        Authorization: `Bearer ${authToken}`
-      }
-    });
+    let mergeFlag = false
 
-    const data = await response.json();
-    if (data.files && data.files.length > 0) {
-      const fileId = data.files[0].id;
-
-      // Save file id to local storage
-      localStorage.setItem('db_file_id', fileId)
-      dbFileId.value = fileId
-
-      const fileContentResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
-        headers: {
-          Authorization: `Bearer ${authToken}`
-        }
-      });
-      const fileContent = await fileContentResponse.json();
-      const fileContentJson = JSON.parse(fileContent);
-
-      let mergeFlag = false
-      if (fileContentJson['layoutKeys']) {
+    // Make API request to fetch database data using the authToken
+    if (dbFolderId.value) {
+      // Save folder id to local storage
+      let layoutKeyCloudExist = await checkFileExist("layout_keys.json", authToken);
+      let layoutKeyContent = await getDriveFileContent(layoutKeyCloudExist, authToken)
+      if (layoutKeyCloudExist) {
         const isLogin = localStorage.getItem('is_login')
         if ((!isLogin || isLogin === 'false') && layoutKeys.value.length && !confirm("Existing layout data is found. Do you want to" +
             " replace it with data from Google Drive?\nOK: Replace\nCancel: Merge")) {
 
-          // Merge fileContentJson['layoutKeys'] with layoutKeys.value
-          fileContentJson.layoutKeys.forEach(layout => {
-            // Check if the layout's name exists in layoutKeys.value
-            const existInLocalLayout = layoutKeys.value.find(localLayout => localLayout.name === layout.name);
-            if (existInLocalLayout) {
-              // Rename the layout's name by adding a timestamp
-              const newName = layout.name + '_' + generateTimestamp();
-              // Rename the key in fileContentJson
-              fileContentJson["layout_" + newName] = fileContentJson["layout_" + layout.name];
-              delete fileContentJson["layout_" + layout.name];
-              layout.name = newName
-            }
-          });
+          // TODO kiem tra lai logic merge
+          const cloudLayoutFiles = await listFolderJsonFiles(dbFolderId.value, authToken);
+          if (cloudLayoutFiles.length > 0) {
+            for (const layoutFile of cloudLayoutFiles) {
+              if (layoutFile.name !== 'layout_keys.json') {
+                const layoutName = extractLayoutName(layoutFile.name);
+                console.log("layoutName: ", layoutName)
+                const existCloudLayout = layoutKeyContent.find(layout => layout.name === layoutName);
+                console.log("existCloudLayout: ", existCloudLayout)
+                const existingLayout = layoutKeys.value.find(layout => layout.name === layoutName);
+                console.log("existingLayout: ", existingLayout)
+                if (existingLayout && existCloudLayout) {
+                  existingLayout.name = layoutName + "_local";
+                  // Add new layout to the beginning of layout_keys array
+                  layoutKeys.value.unshift(existCloudLayout);
+                  console.log("Add new layout existingLayout: ", existingLayout)
+                } else {
+                  // Add new layout to the beginning of layout_keys array
+                  const layoutKeyDataFromCloud = layoutKeyContent.find(layout => layout.name === layoutName);
+                  layoutKeys.value.unshift(layoutKeyDataFromCloud);
+                  console.log("Add new layout layoutKeyDataFromCloud: ", layoutKeyDataFromCloud)
+                }
 
-          layoutKeys.value.unshift(...fileContentJson['layoutKeys']);
-          fileContentJson['layoutKeys'] = layoutKeys.value;
+                // Add new layout to localStorageData
+                let layoutContent = await getDriveFileContent(layoutFile.id, authToken)
+                localStorage.setItem(layoutName, JSON.stringify(layoutContent));
+                dbFileIds.value[layoutName] = layoutFile.id
+              }
+            }
+          }
+
+          localStorage.setItem("layout_keys", JSON.stringify(layoutKeys.value));
+          localStorage.setItem("db_file_ids", JSON.stringify(dbFileIds.value));
           mergeFlag = true
         } else {
-          // Replace local layoutKeys with fileContentJson['layoutKeys']
-          layoutKeys.value = fileContentJson['layoutKeys'];
-        }
+          // Replace all layout file
+          const cloudLayoutFiles = await listFolderJsonFiles(dbFolderId.value, authToken);
+          if (cloudLayoutFiles.length > 0) {
+            for (const layoutFile of cloudLayoutFiles) {
+              const layoutName = layoutFile.name.replace(".json", "")
+              let layoutContent = await getDriveFileContent(layoutFile.id, authToken)
+              localStorage.setItem(layoutFile.name.replace(".json", ""), JSON.stringify(layoutContent));
+              dbFileIds.value[layoutName] = layoutFile.id
+            }
+          }
 
-        // Update your Vue.js app state with fetched data
-        Object.keys(fileContentJson).forEach(localStorageKey => {
-          localStorage.setItem(localStorageKey, JSON.stringify(fileContentJson[localStorageKey]));
-        });
-        console.log("complete sync from drive");
+          // Replace local layoutKeys with layoutKeyContent
+          layoutKeys.value = JSON.parse(localStorage.getItem("layout_keys"));
+
+          // Store file id to local storage
+          localStorage.setItem("db_file_ids", JSON.stringify(dbFileIds.value));
+        }
 
         if (mergeFlag) {
-          syncDataToDrive(dbFileId.value);
+          await syncDataToDrive(dbFolderId.value);
         }
+        console.log("complete sync from drive");
       }
     } else {
-      console.error("lmc-db.json not found in the Google Drive");
-      syncDataToDrive()
+      console.warn("Initializing cloud database...");
+      await syncDataToDrive()
     }
   } catch (error) {
     console.error("Error syncing data from Google Drive:", error);
@@ -323,42 +395,14 @@ const syncDataFromDrive = async (authToken) => {
   }
 };
 
-async function getDbFileContent() {
-  let fileId = localStorage.setItem('db_file_id') || undefined
-  if (fileId) {
-    let init = {
-      method: 'GET',
-      async: true,
-      headers: {
-        Authorization: 'Bearer ' + googleToken.value,
-        'Content-Type': 'application/json'
-      },
-      'contentType': 'json',
-    };
-
-    fetch(
-        'https://www.googleapis.com//drive/v3/files/' + fileId,
-        init)
-        .then((response) => response.json())
-        .then(function (data) {
-          console.log(data)
-          localStorage.setItem('db_file_id', data.id)
-          dbFileId.value = data.id
-        });
-  } else {
-    console.log("File id is empty")
-  }
-}
-
 function generateUserData() {
   const localStorageData = {};
-  const layoutKeys = JSON.parse(localStorage.getItem('layoutKeys'));
-  localStorageData['layoutKeys'] = layoutKeys;
+  const layoutKeys = JSON.parse(localStorage.getItem('layout_keys'));
+  localStorageData['layout_keys'] = layoutKeys;
 
   // Loop through layoutKeys to get localStorage data for each layout
   layoutKeys.forEach(layoutKey => {
-    const localStorageKey = `layout_${layoutKey.name}`;
-    localStorageData[localStorageKey] = JSON.parse(localStorage.getItem(localStorageKey));
+    localStorageData[layoutKey.name] = JSON.parse(localStorage.getItem(layoutKey.name));
   });
 
   // Convert localStorage data to JSON and save it to a file
@@ -385,73 +429,22 @@ function openFileInput() {
   fileInput.value.click();
 }
 
-function syncDataToDrive(fileId) {
-  console.log("syncDataToDrive")
-  syncingToDrive.value = true
-  const jsonContent = generateUserData()
-  const metadata = {
-    name: dbFileName,
-    mimeType: "application/json"
-  };
-
-  // Create a file object from JSON string
-  const file = new Blob([jsonContent], {type: 'application/json'});
-  file.name = dbFileName;
-  const formData = new FormData();
-  formData.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
-  formData.append("file", file);
-
-  if (fileId) {
-    // Replace file
-    axios
-        .patch("https://www.googleapis.com/upload/drive/v3/files/" + fileId + '?uploadType=multipart', formData, {
-          headers: {
-            Authorization: `Bearer ${googleToken.value}`
-          },
-        })
-        .then((response) => {
-          localStorage.setItem('db_file_id', response.data.id)
-          dbFileId.value = response.data.id
-          syncingToDrive.value = false
-        })
-        .catch((error) => {
-          console.log(error)
-        })
-  } else {
-    // Create new file
-    axios
-        .post("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", formData, {
-          headers: {
-            Authorization: `Bearer ${googleToken.value}`
-          },
-        })
-        .then((response) => {
-          localStorage.setItem('db_file_id', response.data.id)
-          dbFileId.value = response.data.id
-          syncingToDrive.value = false
-        })
-        .catch((error) => {
-          console.log(error)
-        })
-  }
-}
-
 // Function to import localStorage data from a JSON file
 function importLocalStorage(event) {
   const file = event.target.files[0];
   const reader = new FileReader();
-  reader.onload = () => {
-    const jsonContent = reader.result;
-    const localStorageData = JSON.parse(jsonContent);
-    layoutKeys.value = localStorageData["layoutKeys"]
+  // TODO merge when import
+  reader.onload = async () => {
+    const localStorageData = JSON.parse(reader.result + "");
+    layoutKeys.value = localStorageData["layout_keys"]
 
     // Loop through localStorageData and set data to localStorage
     Object.keys(localStorageData).forEach(localStorageKey => {
       localStorage.setItem(localStorageKey, JSON.stringify(localStorageData[localStorageKey]));
     });
 
-    if (googleToken.value && dbFileId.value) {
-      syncDataToDrive(dbFileId.value);
+    if (googleToken.value && dbFolderId.value) {
+      await syncDataToDrive(dbFolderId.value);
     }
 
     console.log('LocalStorage data imported successfully.');
@@ -463,54 +456,82 @@ function importLocalStorage(event) {
 async function saveLayout() {
   console.log("Save layout:", newLayout.value)
   if (newLayout.value.length > 0) {
-    const existInLocalLayout = layoutKeys.value.find(layout => layout.name === newLayout.value);
+    const newLayoutName = "layout_" + newLayout.value
+    newLayout.value = ""
+    const existInLocalLayout = layoutKeys.value.find(layout => layout.name === newLayoutName);
     if (existInLocalLayout) {
-      alert("The layout name '" + newLayout.value + "' already exists. Please specify a different layout name.");
+      alert("The layout name '" + newLayoutName + "' already exists. Please specify a different layout name.");
       return;
     }
 
     let windows = await chrome.windows.getAll({populate: true});
     const numberOfTab = countTabs(windows)
 
-    if (layoutKeys.value) {
-      layoutKeys.value.push({name: newLayout.value, createdAt: dayjs().format("DD/MM/YYYY"), numberOfTab: numberOfTab});
-    } else {
+    // Add new layout key
+    if (!layoutKeys.value) {
       layoutKeys.value = []
     }
-    let key = 'layout_' + newLayout.value
-    // Persist layout to localstorage
-    localStorage.setItem('layoutKeys', JSON.stringify(layoutKeys.value))
-    localStorage.setItem(key, JSON.stringify(windows))
-    newLayout.value = ''
-    if (googleToken.value && dbFileId.value) {
-      syncDataToDrive(dbFileId.value);
+    layoutKeys.value.push({name: newLayoutName, createdAt: dayjs().format("DD/MM/YYYY"), numberOfTab: numberOfTab});
+    localStorage.setItem('layout_keys', JSON.stringify(layoutKeys.value))
+    if (googleToken.value && dbFolderId.value) {
+      syncingToDrive.value = true
+      dbFileIds.value["layout_keys"] = await persist(dbFileIds.value["layout_keys"], dbFolderId.value, localStorageDataToBlob("layout_keys"), googleToken.value)
     }
+
+    // Add new layout_
+    localStorage.setItem(newLayoutName, JSON.stringify(windows))
+    if (googleToken.value && dbFolderId.value) {
+      // Persist and Save layout file id
+      dbFileIds.value[newLayoutName] = await persist(null, dbFolderId.value, localStorageDataToBlob(newLayoutName), googleToken.value)
+      syncingToDrive.value = false
+    }
+
+    localStorage.setItem('db_file_ids', JSON.stringify(dbFileIds.value))
   } else {
     alert("Please type a name for the layout!");
   }
 }
 
 async function clearLayout(layout) {
-  if (!confirm("This will remove layout '" + layout.name + "'!\n It will not be possible to recover it!\n Are you sure?")) {
+  if (!confirm("This will remove layout '" + layout.name.replace("layout_") + "'!\n It will not be possible to recover it!\n Are you sure?")) {
     return;
   }
 
+  // remove layout key
   const index = layoutKeys.value.indexOf(layout);
   layoutKeys.value.splice(index, 1);
-  localStorage.setItem('layoutKeys', JSON.stringify(layoutKeys.value))
-  localStorage.removeItem('layout_' + layout.name)
-  if (googleToken.value && dbFileId.value) {
-    syncDataToDrive(dbFileId.value);
+  localStorage.setItem('layout_keys', JSON.stringify(layoutKeys.value))
+  if (googleToken.value && dbFolderId.value) {
+    syncingToDrive.value = true
+    dbFileIds.value["layout_keys"] = await persist(dbFileIds.value["layout_keys"], dbFolderId.value, localStorageDataToBlob("layout_keys"), googleToken.value)
   }
+
+  // remove layout_
+  localStorage.removeItem(layout.name);
+
+  // remove layout id
+  const fileId = dbFileIds.value[layout.name]
+  if (googleToken.value && fileId) {
+    delete dbFileIds.value[layout.name]
+    await deleteFile(fileId, googleToken.value)
+    localStorage.setItem('db_file_ids', JSON.stringify(dbFileIds.value))
+  }
+  syncingToDrive.value = false
 }
 
 function init() {
-  let layoutKeysData = localStorage.getItem('layoutKeys')
+  let layoutKeysData = localStorage.getItem('layout_keys')
+  let localDbFolderId = localStorage.getItem('db_folder_id')
+  let localDbFileIds = localStorage.getItem('db_file_ids')
   let localGoogleToken = localStorage.getItem('google_token')
   let localAccount = localStorage.getItem('google_account')
 
-  console.log("layoutKeys", layoutKeysData)
-
+  if (localDbFolderId != null) {
+    dbFolderId.value = localDbFolderId
+  }
+  if (localDbFileIds != null) {
+    dbFileIds.value = JSON.parse(localDbFileIds)
+  }
   if (localGoogleToken != null) {
     googleToken.value = localGoogleToken
   }
@@ -521,7 +542,7 @@ function init() {
 
   if (layoutKeysData == null) {
     layoutKeys.value = []
-    localStorage.setItem('layoutKeys', JSON.stringify(layoutKeys.value))
+    localStorage.setItem('layout_keys', JSON.stringify(layoutKeys.value))
   } else {
     layoutKeys.value = JSON.parse(layoutKeysData)
   }
