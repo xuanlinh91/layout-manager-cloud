@@ -1,5 +1,28 @@
 // Function to create folder in Google Drive
+// export async function createFolder(folderName, accessToken) {
+//     console.log("Creating folder: ", folderName)
+//     const createFolderEndpoint = 'https://www.googleapis.com/drive/v3/files';
+//
+//     const folderMetadata = {
+//         name: folderName,
+//         mimeType: 'application/vnd.google-apps.folder'
+//     };
+//
+//     const response = await fetch(createFolderEndpoint, {
+//         method: 'POST',
+//         headers: {
+//             'Authorization': `Bearer ${accessToken}`,
+//             'Content-Type': 'application/json'
+//         },
+//         body: JSON.stringify(folderMetadata)
+//     });
+//
+//     const data = await response.json();
+//     return data.id;
+// }
+
 export async function createFolder(folderName, accessToken) {
+    console.log("Creating folder: ", folderName)
     const createFolderEndpoint = 'https://www.googleapis.com/drive/v3/files';
 
     const folderMetadata = {
@@ -16,11 +39,22 @@ export async function createFolder(folderName, accessToken) {
         body: JSON.stringify(folderMetadata)
     });
 
+    if (!response.ok) {
+        console.error(`HTTP error! status: ${response.status}`);
+        return null;
+    }
+
     const data = await response.json();
+    if (!data.id) {
+        console.error('Unexpected response format');
+        return null;
+    }
+
     return data.id;
 }
 
 export async function deleteFile(fileId, accessToken){
+    console.log("Deleting file: ", fileId)
     try {
         await fetch("https://www.googleapis.com/drive/v3/files/" + fileId, {
             method: 'DELETE',
@@ -162,10 +196,19 @@ export async function persist(fileId, folderId, file, accessToken) {
     if (fileId) {
         // Replace file
         fileId = await updateFile(folderId, fileId, file, accessToken)
+        if (!fileId) {
+            console.error('Error updating file:', file.name);
+            return;
+        }
         console.log('File updated successfully. File ID:', fileId);
     } else {
         // Upload file to folder
         fileId = await uploadFile(folderId, file, accessToken);
+        if (!fileId) {
+            console.error('Error uploading file:', file.name);
+            return;
+        }
+
         console.log('File uploaded successfully. File ID:', fileId);
     }
 

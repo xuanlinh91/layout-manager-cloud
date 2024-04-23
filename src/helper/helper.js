@@ -25,11 +25,10 @@ export function splitOldNewLayout(layoutKeys, layoutIds){
 
     // Iterate over layoutKeys array
     layoutKeys.forEach(key => {
-        // Generate the key corresponding to layoutIds object
-        const layoutIdKey = "layout_" + key.name;
-
+        console.log("key");
+        console.log(key);
         // Check if the key exists in layoutIds
-        if (layoutIds.hasOwnProperty(layoutIdKey)) {
+        if (layoutIds.hasOwnProperty(key.name)) {
             oldLayouts.push(key); // Add to layoutKeysExist array if exists
         } else {
             newLayouts.push(key); // Add to layoutKeysNotExist array if not exists
@@ -37,4 +36,12 @@ export function splitOldNewLayout(layoutKeys, layoutIds){
     });
 
     return {oldLayouts, newLayouts}
+}
+
+export async function hashString(string) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(string);
+    const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
 }
