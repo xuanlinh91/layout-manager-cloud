@@ -155,10 +155,10 @@ export async function getDriveFileContent(fileId, accessToken) {
     }
 }
 
-export async function downloadLayoutDataToStorage(fileId, fileName, accessToken){
-    let layoutContent = await getDriveFileContent(fileId, accessToken)
-    localStorage.setItem(fileName, JSON.stringify(layoutContent));
-}
+// export async function downloadLayoutDataToStorage(fileId, fileName, accessToken){
+//     let layoutContent = await getDriveFileContent(fileId, accessToken)
+//     localStorage.setItem(fileName, JSON.stringify(layoutContent));
+// }
 
 export async function listFolderJsonFiles(folderID, accessToken){
     const endpoint = "https://www.googleapis.com/drive/v3/files?q='" + folderID + "'+in+parents&mimeType='application/json'"

@@ -25,8 +25,6 @@ export function splitOldNewLayout(layoutKeys, layoutIds){
 
     // Iterate over layoutKeys array
     layoutKeys.forEach(key => {
-        console.log("key");
-        console.log(key);
         // Check if the key exists in layoutIds
         if (layoutIds.hasOwnProperty(key.name)) {
             oldLayouts.push(key); // Add to layoutKeysExist array if exists

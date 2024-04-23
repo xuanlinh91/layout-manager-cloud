@@ -226,28 +226,44 @@ async function syncDataToDrive(folderId, authToken) {
       dbFileIds.value[layoutKey.name] = await persist(null, folderId, file, authToken)
     }
 
-    // Persist layoutKeys file
-    const layoutKeyFile = localStorageDataToBlob("layout_keys");
-    dbFileIds.value["layout_keys"] = await persist(null, folderId, layoutKeyFile, authToken)
-    localStorage.setItem('db_file_ids', JSON.stringify(dbFileIds.value));
+    // // Persist layoutKeys file
+    // const layoutKeyFile = localStorageDataToBlob("layout_keys");
+    // dbFileIds.value["layout_keys"] = await persist(null, folderId, layoutKeyFile, authToken)
+    // localStorage.setItem('db_file_ids', JSON.stringify(dbFileIds.value));
   } else {
     // Folder exist
-    const {oldLayouts, newLayouts} = splitOldNewLayout(layoutKeys.value, dbFileIds.value)
+    let cloudLayoutContent = await getDriveFileContent(dbFileIds.value["layout_keys"], authToken)
+    // Sync new changed layout to cloud
+    for (const localLayout of layoutKeys.value) {
+      const existingOnCloud = cloudLayoutContent.find(layout => layout.hash === localLayout.hash);
+      if (!existingOnCloud) {
+        console.log("Changed layout: ", localLayout.name);
+        const file = localStorageDataToBlob(localLayout.name)
+        // Check if the local layout has file id in dbFileIds and persist it
+        if (dbFileIds.value[localLayout.name]) {
+          await persist(dbFileIds.value[localLayout.name], folderId, file, authToken)
+        } else {
+          dbFileIds.value[localLayout.name] = await persist(null, folderId, file, authToken)
+        }
+      }
+    }
+
+    // const {oldLayouts, newLayouts} = splitOldNewLayout(layoutKeys.value, dbFileIds.value)
 
     // Replace old layouts
-    for (const layout of oldLayouts) {
-      console.log("Old layout: ", layout.name)
-      const layoutFileId = dbFileIds.value[layout.name]
-      const file = localStorageDataToBlob(layout.name)
-      await persist(layoutFileId, folderId, file, authToken)
-    }
-
-    // Upload new layouts & save file id
-    for (const layout of newLayouts) {
-      console.log("New layout: ", layout.name)
-      const file = localStorageDataToBlob(layout.name)
-      dbFileIds.value[layout.name] = await persist(null, folderId, file, authToken)
-    }
+    // for (const layout of oldLayouts) {
+    //   console.log("Old layout: ", layout.name)
+    //   const layoutFileId = dbFileIds.value[layout.name]
+    //   const file = localStorageDataToBlob(layout.name)
+    //   await persist(layoutFileId, folderId, file, authToken)
+    // }
+    //
+    // // Upload new layouts & save file id
+    // for (const layout of newLayouts) {
+    //   console.log("New layout: ", layout.name)
+    //   const file = localStorageDataToBlob(layout.name)
+    //   dbFileIds.value[layout.name] = await persist(null, folderId, file, authToken)
+    // }
   }
 
   // persist layoutKeys if not exist, update if exist
@@ -323,9 +339,6 @@ async function loginGoogle() {
   localStorage.setItem('is_login', "true");
 }
 
-function mergeCloudAndLocal(){
-
-}
 
 function extractLayoutName(fileName) {
   return fileName.replace('.json', '');
@@ -493,7 +506,12 @@ async function saveLayout() {
     // Create a hash of the layout content
     const layoutHash = await hashString(JSON.stringify(windows));
 
-    layoutKeys.value.push({name: newLayoutName, createdAt: dayjs().format("DD/MM/YYYY"), numberOfTab: numberOfTab, hash: layoutHash});
+    layoutKeys.value.push({
+      name: newLayoutName,
+      createdAt: dayjs().format("DD/MM/YYYY"),
+      numberOfTab: numberOfTab,
+      hash: layoutHash
+    });
     localStorage.setItem('layout_keys', JSON.stringify(layoutKeys.value))
     if (googleToken.value && dbFolderId.value) {
       syncingToDrive.value = true
