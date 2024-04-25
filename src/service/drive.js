@@ -1,36 +1,14 @@
-// Function to create folder in Google Drive
-// export async function createFolder(folderName, accessToken) {
-//     console.log("Creating folder: ", folderName)
-//     const createFolderEndpoint = 'https://www.googleapis.com/drive/v3/files';
-//
-//     const folderMetadata = {
-//         name: folderName,
-//         mimeType: 'application/vnd.google-apps.folder'
-//     };
-//
-//     const response = await fetch(createFolderEndpoint, {
-//         method: 'POST',
-//         headers: {
-//             'Authorization': `Bearer ${accessToken}`,
-//             'Content-Type': 'application/json'
-//         },
-//         body: JSON.stringify(folderMetadata)
-//     });
-//
-//     const data = await response.json();
-//     return data.id;
-// }
+const DRIVE_API_URL = 'https://www.googleapis.com/drive/v3/files';
+const UPLOAD_URL = 'https://www.googleapis.com/upload/drive/v3/files';
 
 export async function createFolder(folderName, accessToken) {
     console.log("Creating folder: ", folderName)
-    const createFolderEndpoint = 'https://www.googleapis.com/drive/v3/files';
-
     const folderMetadata = {
         name: folderName,
         mimeType: 'application/vnd.google-apps.folder'
     };
 
-    const response = await fetch(createFolderEndpoint, {
+    const response = await fetch(DRIVE_API_URL, {
         method: 'POST',
         headers: {
             'Authorization': `Bearer ${accessToken}`,
@@ -53,10 +31,10 @@ export async function createFolder(folderName, accessToken) {
     return data.id;
 }
 
-export async function deleteFile(fileId, accessToken){
+export async function deleteFile(fileId, accessToken) {
     console.log("Deleting file: ", fileId)
     try {
-        await fetch("https://www.googleapis.com/drive/v3/files/" + fileId, {
+        await fetch(DRIVE_API_URL + fileId, {
             method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${accessToken}`
@@ -67,7 +45,7 @@ export async function deleteFile(fileId, accessToken){
     }
 }
 
-async function uploadFile(folderId, uploadFile, accessToken){
+async function uploadFile(folderId, uploadFile, accessToken) {
     const metadata = {
         name: uploadFile.name,
         mimeType: "application/json",
@@ -80,7 +58,7 @@ async function uploadFile(folderId, uploadFile, accessToken){
     formData.append("file", uploadFile);
 
     try {
-        const response = await fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart", {
+        const response = await fetch(UPLOAD_URL + "?uploadType=multipart", {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${accessToken}`
@@ -96,11 +74,10 @@ async function uploadFile(folderId, uploadFile, accessToken){
     }
 }
 
-async function updateFile(folderId, fileId, uploadFile, accessToken){
+async function updateFile(folderId, fileId, uploadFile, accessToken) {
     const metadata = {
         name: uploadFile.name,
         mimeType: "application/json",
-        // parents: [folderId]
     };
 
     // Create a file object from JSON string
@@ -109,7 +86,7 @@ async function updateFile(folderId, fileId, uploadFile, accessToken){
     formData.append("file", uploadFile);
 
     try {
-        const response = await fetch("https://www.googleapis.com/upload/drive/v3/files/" + fileId + '?uploadType=multipart', {
+        const response = await fetch(UPLOAD_URL + "/" + fileId + '?uploadType=multipart', {
             method: 'PATCH',
             headers: {
                 'Authorization': `Bearer ${accessToken}`
@@ -125,8 +102,9 @@ async function updateFile(folderId, fileId, uploadFile, accessToken){
     }
 }
 
-export async function checkFolderExist(folderName, accessToken){
-    const foldersResponse = await fetch('https://www.googleapis.com/drive/v3/files?q=mimeType="application/vnd.google-apps.folder"&name="' + folderName + '"', {
+export async function checkFolderExist(folderName, accessToken) {
+    const foldersResponse = await fetch(DRIVE_API_URL + "?q=trashed = false and mimeType = " +
+        "\'application/vnd.google-apps.folder\' and name = \'" + folderName + "\'", {
         method: 'GET',
         headers: {
             'Authorization': `Bearer ${accessToken}`
@@ -144,7 +122,7 @@ export async function checkFolderExist(folderName, accessToken){
 
 export async function getDriveFileContent(fileId, accessToken) {
     if (fileId) {
-        const fileContentResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+        const fileContentResponse = await fetch(DRIVE_API_URL + `/${fileId}?alt=media`, {
             headers: {
                 Authorization: `Bearer ${accessToken}`,
                 'Content-Type': 'application/json'
@@ -155,13 +133,9 @@ export async function getDriveFileContent(fileId, accessToken) {
     }
 }
 
-// export async function downloadLayoutDataToStorage(fileId, fileName, accessToken){
-//     let layoutContent = await getDriveFileContent(fileId, accessToken)
-//     localStorage.setItem(fileName, JSON.stringify(layoutContent));
-// }
 
-export async function listFolderJsonFiles(folderID, accessToken){
-    const endpoint = "https://www.googleapis.com/drive/v3/files?q='" + folderID + "'+in+parents&mimeType='application/json'"
+export async function listFolderJsonFiles(folderID, accessToken) {
+    const endpoint = DRIVE_API_URL + "?q='" + folderID + "'+in+parents&mimeType='application/json'"
     const folderFiles = await fetch(endpoint, {
         method: 'GET',
         headers: {
@@ -172,8 +146,9 @@ export async function listFolderJsonFiles(folderID, accessToken){
     const filesData = await folderFiles.json();
     return filesData.files
 }
-export async function checkFileExist(fileName, accessToken){
-    const endpoint = "https://www.googleapis.com/drive/v3/files?q=name%3D%27" + fileName + "%27&fields=files(id)";
+
+export async function checkFileExist(fileName, accessToken) {
+    const endpoint = DRIVE_API_URL+ "?q=name%3D%27" + fileName + "%27&fields=files(id)";
     const fileCheckResponse = await fetch(endpoint, {
         method: 'GET',
         headers: {
