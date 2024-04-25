@@ -205,7 +205,10 @@ const dbFolderName = "lmc-database"
 // TODO khong cho thao tac khi dang sync
 
 async function syncDataToDrive(folderId, authToken) {
-  console.log("syncDataToDrive with folderId: ", folderId)
+  if (layoutKeys.value.length === 0) {
+    return;
+  }
+  console.log("syncDataToDrive with folderId: ", folderId);
   syncingToDrive.value = true
   let syncFlag = false
 
@@ -318,7 +321,6 @@ async function loginGoogle() {
   if (folderId && !(is_login === "true")) {
     dbFolderId.value = folderId
     localStorage.setItem('db_folder_id', folderId)
-    // await syncDataFromDrive(googleToken.value);
   }
   await syncDataFromDrive(googleToken.value);
   await syncDataToDrive(folderId, googleToken.value);
