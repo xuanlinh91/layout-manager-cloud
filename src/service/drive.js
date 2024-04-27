@@ -4,17 +4,13 @@ const UPLOAD_URL = 'https://www.googleapis.com/upload/drive/v3/files';
 export async function createFolder(folderName, accessToken) {
     console.log("Creating folder: ", folderName)
     const folderMetadata = {
-        name: folderName,
-        mimeType: 'application/vnd.google-apps.folder'
+        name: folderName, mimeType: 'application/vnd.google-apps.folder'
     };
 
     const response = await fetch(DRIVE_API_URL, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(folderMetadata)
+        method: 'POST', headers: {
+            'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json'
+        }, body: JSON.stringify(folderMetadata)
     });
 
     if (!response.ok) {
@@ -31,12 +27,19 @@ export async function createFolder(folderName, accessToken) {
     return data.id;
 }
 
+// export async function bulkDeleteFile(fileIds, accessToken) {
+//     // Create an array of promises for each delete operation
+//     const deletePromises = fileIds.map(fileId => deleteFile(fileId, accessToken));
+//
+//     // Use Promise.all to wait for all delete operations to complete
+//     await Promise.all(deletePromises);
+// }
+
 export async function deleteFile(fileId, accessToken) {
     console.log("Deleting file: ", fileId)
     try {
         await fetch(DRIVE_API_URL + "/" + fileId, {
-            method: 'DELETE',
-            headers: {
+            method: 'DELETE', headers: {
                 'Authorization': `Bearer ${accessToken}`
             }
         });
@@ -47,9 +50,7 @@ export async function deleteFile(fileId, accessToken) {
 
 async function uploadFile(folderId, uploadFile, accessToken) {
     const metadata = {
-        name: uploadFile.name,
-        mimeType: "application/json",
-        parents: [folderId]
+        name: uploadFile.name, mimeType: "application/json", parents: [folderId]
     };
 
     // Create a file object from JSON string
@@ -59,11 +60,9 @@ async function uploadFile(folderId, uploadFile, accessToken) {
 
     try {
         const response = await fetch(UPLOAD_URL + "?uploadType=multipart", {
-            method: 'POST',
-            headers: {
+            method: 'POST', headers: {
                 'Authorization': `Bearer ${accessToken}`
-            },
-            body: formData
+            }, body: formData
         });
 
         const data = await response.json();
@@ -76,8 +75,7 @@ async function uploadFile(folderId, uploadFile, accessToken) {
 
 async function updateFile(folderId, fileId, uploadFile, accessToken) {
     const metadata = {
-        name: uploadFile.name,
-        mimeType: "application/json",
+        name: uploadFile.name, mimeType: "application/json",
     };
 
     // Create a file object from JSON string
@@ -87,11 +85,9 @@ async function updateFile(folderId, fileId, uploadFile, accessToken) {
 
     try {
         const response = await fetch(UPLOAD_URL + "/" + fileId + '?uploadType=multipart', {
-            method: 'PATCH',
-            headers: {
+            method: 'PATCH', headers: {
                 'Authorization': `Bearer ${accessToken}`
-            },
-            body: formData
+            }, body: formData
         });
 
         const data = await response.json();
@@ -103,10 +99,8 @@ async function updateFile(folderId, fileId, uploadFile, accessToken) {
 }
 
 export async function checkFolderExist(folderName, accessToken) {
-    const foldersResponse = await fetch(DRIVE_API_URL + "?q=trashed = false and mimeType = " +
-        "\'application/vnd.google-apps.folder\' and name = \'" + folderName + "\'", {
-        method: 'GET',
-        headers: {
+    const foldersResponse = await fetch(DRIVE_API_URL + "?q=trashed = false and mimeType = " + "\'application/vnd.google-apps.folder\' and name = \'" + folderName + "\'", {
+        method: 'GET', headers: {
             'Authorization': `Bearer ${accessToken}`
         }
     });
@@ -124,8 +118,7 @@ export async function getDriveFileContent(fileId, accessToken) {
     if (fileId) {
         const fileContentResponse = await fetch(DRIVE_API_URL + `/${fileId}?alt=media`, {
             headers: {
-                Authorization: `Bearer ${accessToken}`,
-                'Content-Type': 'application/json'
+                Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json'
             }
         });
 
@@ -133,12 +126,10 @@ export async function getDriveFileContent(fileId, accessToken) {
     }
 }
 
-
 export async function listFolderJsonFiles(folderID, accessToken) {
-    const endpoint = DRIVE_API_URL + "?q='" + folderID + "'+in+parents&mimeType='application/json'"
+    const endpoint = DRIVE_API_URL + "?q=\'" + folderID + "\'+in+parents&mimeType=\'application/json\'"
     const folderFiles = await fetch(endpoint, {
-        method: 'GET',
-        headers: {
+        method: 'GET', headers: {
             'Authorization': `Bearer ${accessToken}`
         }
     });
@@ -148,10 +139,9 @@ export async function listFolderJsonFiles(folderID, accessToken) {
 }
 
 export async function checkFileExist(fileName, accessToken) {
-    const endpoint = DRIVE_API_URL+ "?q=name%3D%27" + fileName + "%27&fields=files(id)";
+    const endpoint = DRIVE_API_URL + "?q=trashed = false and name = \'" + fileName + "\' &fields=files(id)";
     const fileCheckResponse = await fetch(endpoint, {
-        method: 'GET',
-        headers: {
+        method: 'GET', headers: {
             'Authorization': `Bearer ${accessToken}`
         }
     });

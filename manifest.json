@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "author": "Nguyen Xuan Linh",
   "name": "Layout Manager Cloud",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Save and load your chrome layout with cloud storage support",
   "permissions": ["tabs", "identity"],
   "action": {

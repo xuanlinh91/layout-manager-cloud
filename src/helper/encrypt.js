@@ -56,15 +56,27 @@ async function encryptData(data, passkey) {
 
 // Modify the decryptData function
 async function decryptData(encryptedData, passkey) {
-    const derivedKey = await deriveKey(passkey);
-    // Convert iv and data from Base64 strings to Uint8Array
-    const decryptedData = await window.crypto.subtle.decrypt(
-        {name: 'AES-CBC', iv: base64ToArray(encryptedData.iv)},
-        derivedKey,
-        base64ToArray(encryptedData.data)
-    );
-    const decoder = new TextDecoder();
-    return decoder.decode(decryptedData);
+    try {
+        const derivedKey = await deriveKey(passkey);
+        // Convert iv and data from Base64 strings to Uint8Array
+        const decryptedData = await window.crypto.subtle.decrypt(
+            {name: 'AES-CBC', iv: base64ToArray(encryptedData.iv)},
+            derivedKey,
+            base64ToArray(encryptedData.data)
+        );
+        const decoder = new TextDecoder();
+        return { success: true, data: decoder.decode(decryptedData) };
+    } catch (error) {
+        // If an error occurs during decryption, the passkey is likely incorrect
+        return { success: false, error: 'Decryption failed, passkey may be incorrect.' };
+    }
 }
+
+// encryptData('Hello, World!', '987654').then(encryptedData => {
+//     console.log(encryptedData);
+//     decryptData(encryptedData, '987654').then(decryptedData => {
+//         console.log(decryptedData);
+//     });
+// });
 
 export {encryptData, decryptData};
