@@ -1,12 +1,17 @@
+import {encryptData} from "./encrypt.js";
+
 export function countTabs(jsonData) {
     return jsonData.flatMap(layout => layout.tabs).length;
 }
 
-export function localStorageDataToBlob(item, fileName) {
+export async function localStorageDataToBlob(item, encryption, passkey, fileName) {
     if (!fileName) {
         fileName = item + ".json"
     }
-    const data = localStorage.getItem(item);
+    let data = localStorage.getItem(item);
+    if (encryption) {
+        data = JSON.stringify(await encryptData(data, passkey));
+    }
     const file = new Blob([data], {type: 'application/json'});
     file.name = fileName;
     return file

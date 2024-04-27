@@ -34,7 +34,7 @@ export async function createFolder(folderName, accessToken) {
 export async function deleteFile(fileId, accessToken) {
     console.log("Deleting file: ", fileId)
     try {
-        await fetch(DRIVE_API_URL + fileId, {
+        await fetch(DRIVE_API_URL + "/" + fileId, {
             method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${accessToken}`
