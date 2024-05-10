@@ -5,7 +5,7 @@
       <div>
         <h5 class="text-2xl font-bold leading-none text-gray-900 dark:text-white mb-2">Layout Manager Cloud</h5>
         <span
-            class="w-fit bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-gray-700 dark:text-gray-300">1.1.0</span>
+            class="w-fit bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-gray-700 dark:text-gray-300">1.2.0</span>
       </div>
       <button :disabled="loggingIn" v-if="!googleAccount" @click="loginGoogle"
               class="px-2 py-1 border flex gap-1 items-center border-emerald-200 dark:border-emerald-700 rounded-lg text-slate-700 dark:text-slate-200 hover:border-emerald-400 dark:hover:border-emerald-500 hover:text-slate-900 dark:hover:text-slate-300 hover:shadow transition duration-150">
@@ -28,11 +28,12 @@
         <img class="w-6 h-6" src="/assets/google-color.svg" loading="lazy"
              alt="google logo">
         <span class="text-base truncate w-7/12">{{ googleAccount }}</span>
-        <button v-if="(!syncingFromDrive && !syncingToDrive)" @click="logOutGoogle(googleToken)" type="button"
+        <button v-if="(!syncingFromDrive && !syncingToDrive && !loggingIn)" @click="logOutGoogle(googleToken)"
+                type="button"
                 class="ml-auto px-2 py-1 text-xs font-medium text-center text-white bg-gray-700 rounded-lg hover:bg-gray-500 focus:ring-4 focus:outline-none focus:ring-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 dark:focus:ring-gray-500">
           Sign out
         </button>
-        <svg v-if="syncingFromDrive || syncingToDrive" aria-hidden="true" role="status"
+        <svg v-if="syncingFromDrive || syncingToDrive || loggingIn" aria-hidden="true" role="status"
              class="ml-auto inline w-4 me-3 text-gray-200 animate-spin dark:text-gray-600 h-full" viewBox="0 0 100 101"
              fill="none" xmlns="http://www.w3.org/2000/svg">
           <path
@@ -43,7 +44,8 @@
               fill="#1C64F2"/>
         </svg>
       </div>
-      <div v-if="syncingToDrive" class="flex items-center text-sm text-orange-500 rounded-lg dark:text-orange-500"
+      <div v-if="syncingToDrive || syncingFromDrive"
+           class="flex items-center text-sm text-orange-500 rounded-lg dark:text-orange-500"
            role="alert">
         <svg class="flex-shrink-0 inline w-4 h-4 me-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
              fill="currentColor" viewBox="0 0 20 20">
@@ -51,7 +53,7 @@
               d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z"/>
         </svg>
         <div>
-          <span class="font-medium">Synchronizing to google drive!</span>
+          <span class="font-medium">Synchronizing with google drive!</span>
         </div>
       </div>
       <div class="flex">
@@ -63,7 +65,7 @@
                 class="py-0 px-2 me-2 mb-2 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700 h-full">
           Import
         </button>
-        <button :disabled="syncingFromDrive || syncingToDrive" v-if="!isEncrypt && googleAccount"
+        <button :disabled="syncingFromDrive || syncingToDrive" v-if="!isEncrypt"
                 @click="showPassKey = !showPassKey"
                 class="transform transition-transform duration-200 hover:scale-125">
           <svg fill="#9ca3af" width="30px" height="30px" viewBox="0 0 35 35" data-name="Layer 2" id="Layer_2"
@@ -74,7 +76,15 @@
                 d="M16.4,22.35a1.3,1.3,0,0,1-.81-.29l-4.27-3.6a1.25,1.25,0,0,1,1.61-1.92l3.35,2.82L22,13.06a1.25,1.25,0,0,1,1.86,1.68l-6.48,7.2A1.27,1.27,0,0,1,16.4,22.35Z"/>
           </svg>
         </button>
-        <button :disabled="syncingFromDrive || syncingToDrive" v-if="isEncrypt && googleAccount"
+        <!--        <button :disabled="syncingFromDrive || syncingToDrive" v-if="isEncrypt"-->
+        <!--                @click="showPassKey = !showPassKey"-->
+        <!--                class="transform transition-transform duration-200 hover:scale-125">-->
+        <!--          <svg width="32px" height="32px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">-->
+        <!--            <path fill="#9ca3af" stroke="#000000" stroke-width="2"-->
+        <!--                  d="M7,11 L7,6 C7,3 9,1 12,1 C15,1 17,3 17,6 L17,11 M12,23 C15.8659932,23 19,19.8659932 19,16 C19,12.1340068 15.8659932,9 12,9 C8.13400675,9 5,12.1340068 5,16 C5,19.8659932 8.13400675,23 12,23 Z M12,15 L12,19 M12,16 C12.5522847,16 13,15.5522847 13,15 C13,14.4477153 12.5522847,14 12,14 C11.4477153,14 11,14.4477153 11,15 C11,15.5522847 11.4477153,16 12,16 Z"/>-->
+        <!--          </svg>-->
+        <!--        </button>-->
+        <button :disabled="syncingFromDrive || syncingToDrive" v-if="isEncrypt"
                 @click="unEncryptLayout"
                 class="transform transition-transform duration-200 hover:scale-125">
           <svg width="32px" height="32px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -82,32 +92,6 @@
                   d="M7,11 L7,6 C7,3 9,1 12,1 C15,1 17,3 17,6 L17,11 M12,23 C15.8659932,23 19,19.8659932 19,16 C19,12.1340068 15.8659932,9 12,9 C8.13400675,9 5,12.1340068 5,16 C5,19.8659932 8.13400675,23 12,23 Z M12,15 L12,19 M12,16 C12.5522847,16 13,15.5522847 13,15 C13,14.4477153 12.5522847,14 12,14 C11.4477153,14 11,14.4477153 11,15 C11,15.5522847 11.4477153,16 12,16 Z"/>
           </svg>
         </button>
-        <!--        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" height="50" viewBox="0 0 154 50" fill="none">-->
-        <!--          <defs>-->
-        <!--            <pattern id="pattern0" patternContentUnits="objectBoundingBox" width="1" height="1">-->
-        <!--              <use xlink:href="#image0" transform="scale(0.015625)"/>-->
-        <!--            </pattern>-->
-        <!--            <style type="text/css">-->
-        <!--              /* latin */-->
-        <!--              @font-face {-->
-        <!--                font-family: 'Cookie';-->
-        <!--                font-style: normal;-->
-        <!--                font-weight: 400;-->
-        <!--                font-display: swap;-->
-        <!--                src:  local('Cookie Regular'), local('Cookie-Regular'),  url(data:font/woff2;base64,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) format('woff2');unicode-range:U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;-->
-        <!--              }-->
-
-        <!--            </style>-->
-        <!--          </defs>-->
-        <!--          <a xlink:href="https://www.buymeacoffee.com/xuanlinh91" target="_blank">-->
-        <!--            <rect width="154" height="50" rx="10.77565" fill="#FFDD00"/><g xmlns="http://www.w3.org/2000/svg" transform="translate(14,14)"> <path d="M14.8456 5.58283L14.8291 5.57315L14.791 5.56152C14.8063 5.57446 14.8255 5.58196 14.8456 5.58283V5.58283Z" fill="#0D0C22"/> <path d="M15.0848 7.29736L15.0664 7.30253L15.0848 7.29736Z" fill="#0D0C22"/> <path d="M14.8527 5.58024C14.8503 5.57995 14.848 5.5794 14.8458 5.57861C14.8457 5.58013 14.8457 5.58166 14.8458 5.58318C14.8483 5.58285 14.8507 5.58184 14.8527 5.58024V5.58024Z" fill="#0D0C22"/> <path d="M14.8457 5.5831H14.8482V5.58154L14.8457 5.5831Z" fill="#0D0C22"/> <path d="M15.0703 7.29435L15.0981 7.27852L15.1084 7.27271L15.1178 7.2627C15.1002 7.27029 15.0841 7.28102 15.0703 7.29435V7.29435Z" fill="#0D0C22"/> <path d="M14.8932 5.62033L14.8661 5.59449L14.8477 5.58447C14.8576 5.60193 14.8739 5.61481 14.8932 5.62033V5.62033Z" fill="#0D0C22"/> <path d="M8.06888 22.2583C8.04721 22.2677 8.02823 22.2823 8.01367 22.3009L8.03079 22.2899C8.04241 22.2793 8.05887 22.2667 8.06888 22.2583Z" fill="#0D0C22"/> <path d="M12.031 21.4787C12.031 21.4542 12.019 21.4587 12.0219 21.5459C12.0219 21.5388 12.0248 21.5316 12.0261 21.5249C12.0278 21.5094 12.029 21.4942 12.031 21.4787Z" fill="#0D0C22"/> <path d="M11.6216 22.2583C11.5999 22.2677 11.581 22.2823 11.5664 22.3009L11.5835 22.2899C11.5951 22.2793 11.6116 22.2667 11.6216 22.2583Z" fill="#0D0C22"/> <path d="M5.27882 22.4436C5.26237 22.4293 5.24224 22.4199 5.2207 22.4165C5.23814 22.4249 5.25557 22.4333 5.2672 22.4398L5.27882 22.4436Z" fill="#0D0C22"/> <path d="M4.64988 21.8423C4.64731 21.8169 4.6395 21.7923 4.62695 21.77C4.63584 21.7932 4.64328 21.8169 4.64923 21.8411L4.64988 21.8423Z" fill="#0D0C22"/> <path d="M1.47656 7.24561L1.49143 7.2595L1.50113 7.26532C1.49366 7.2579 1.48543 7.25129 1.47656 7.24561V7.24561Z" fill="#0D0C22"/> <path d="M16.5048 6.41468L16.3727 5.74859C16.2542 5.15095 15.9853 4.58625 15.3718 4.37025C15.1752 4.30115 14.9521 4.27145 14.8013 4.12841C14.6505 3.98538 14.606 3.76324 14.5711 3.55725C14.5065 3.17917 14.4458 2.80076 14.3796 2.42332C14.3225 2.09883 14.2773 1.73431 14.1284 1.43662C13.9347 1.0369 13.5327 0.803144 13.133 0.648488C12.9282 0.572029 12.7192 0.507349 12.507 0.454764C11.5083 0.1913 10.4583 0.0944382 9.43095 0.0392269C8.1978 -0.0288182 6.96136 -0.00831713 5.73115 0.100573C4.81548 0.183874 3.85106 0.284611 2.98092 0.601349C2.66289 0.71726 2.33517 0.856418 2.09334 1.10212C1.79662 1.40401 1.69976 1.87089 1.91641 2.24736C2.07042 2.51469 2.3313 2.70357 2.608 2.82853C2.96841 2.98953 3.34482 3.11204 3.73095 3.19402C4.80612 3.43165 5.91971 3.52496 7.01812 3.56468C8.23556 3.61381 9.45495 3.57399 10.6666 3.44554C10.9662 3.4126 11.2653 3.37311 11.5639 3.32704C11.9155 3.27312 12.1411 2.81335 12.0375 2.49306C11.9135 2.11013 11.5803 1.96161 11.2035 2.01941C11.148 2.02812 11.0928 2.0362 11.0372 2.04427L10.9972 2.05008C10.8696 2.06622 10.7419 2.08129 10.6143 2.09528C10.3506 2.1237 10.0863 2.14694 9.82131 2.16502C9.22787 2.20635 8.63281 2.2254 8.03808 2.22637C7.45368 2.22637 6.86896 2.2099 6.28585 2.17148C6.0198 2.15404 5.7544 2.13187 5.48964 2.10497C5.36921 2.09238 5.2491 2.07914 5.12899 2.06429L5.01469 2.04976L4.98983 2.04621L4.87134 2.02909C4.62919 1.99261 4.38703 1.95064 4.14746 1.89994C4.12328 1.89458 4.10166 1.88113 4.08616 1.86182C4.07066 1.8425 4.06222 1.81848 4.06222 1.79372C4.06222 1.76896 4.07066 1.74493 4.08616 1.72562C4.10166 1.70631 4.12328 1.69286 4.14746 1.68749H4.15198C4.35959 1.64326 4.56881 1.60548 4.77867 1.57255C4.84863 1.56157 4.9188 1.55081 4.98919 1.54026H4.99112C5.12253 1.53155 5.25459 1.50798 5.38535 1.49248C6.52305 1.37414 7.66751 1.33379 8.81071 1.37172C9.36573 1.38787 9.92043 1.42048 10.4729 1.47666C10.5917 1.48893 10.7099 1.50184 10.828 1.51637C10.8732 1.52186 10.9188 1.52832 10.9643 1.53381L11.056 1.54704C11.3233 1.58686 11.5892 1.63519 11.8538 1.69201C12.2458 1.77725 12.7491 1.80502 12.9235 2.23444C12.979 2.37069 13.0042 2.52212 13.0349 2.66515L13.0739 2.84758C13.0749 2.85085 13.0757 2.85419 13.0762 2.85758C13.1685 3.28808 13.261 3.71858 13.3535 4.14908C13.3603 4.18088 13.3605 4.21374 13.354 4.24561C13.3475 4.27747 13.3346 4.30766 13.3159 4.33429C13.2972 4.36092 13.2733 4.38342 13.2455 4.40038C13.2178 4.41734 13.1869 4.42841 13.1546 4.43288H13.1521L13.0956 4.44063L13.0397 4.44806C12.8628 4.47109 12.6856 4.49261 12.5083 4.51263C12.1589 4.55245 11.809 4.58689 11.4586 4.61595C10.7623 4.67385 10.0645 4.71185 9.36541 4.72993C9.00917 4.7394 8.65304 4.74381 8.29702 4.74316C6.87993 4.74205 5.46407 4.65969 4.05641 4.49649C3.90401 4.47841 3.75162 4.45904 3.59922 4.43934C3.71739 4.45452 3.51334 4.42772 3.47201 4.42191C3.37515 4.40834 3.27828 4.39425 3.18142 4.37961C2.85629 4.33086 2.53309 4.2708 2.20861 4.21817C1.81631 4.1536 1.44114 4.18589 1.0863 4.37961C0.795031 4.539 0.55929 4.78341 0.410525 5.08024C0.257483 5.39666 0.211959 5.74116 0.143509 6.08115C0.0750604 6.42114 -0.0314881 6.78695 0.00887101 7.13598C0.0957239 7.88924 0.622331 8.50141 1.37979 8.6383C2.09237 8.76745 2.80883 8.87206 3.52722 8.96118C6.34923 9.3068 9.20021 9.34815 12.031 9.08451C12.2616 9.06299 12.4918 9.03953 12.7217 9.01413C12.7935 9.00624 12.8661 9.01451 12.9343 9.03834C13.0025 9.06217 13.0645 9.10095 13.1158 9.15184C13.167 9.20273 13.2063 9.26445 13.2306 9.33246C13.2549 9.40048 13.2637 9.47307 13.2564 9.54493L13.1847 10.2417C13.0402 11.6496 12.8958 13.0575 12.7514 14.4652C12.6007 15.9435 12.4491 17.4217 12.2965 18.8999C12.2534 19.3161 12.2104 19.7323 12.1673 20.1484C12.126 20.5581 12.1202 20.9808 12.0423 21.3857C11.9197 22.0224 11.4886 22.4134 10.8597 22.5564C10.2834 22.6875 9.69481 22.7564 9.10388 22.7617C8.44877 22.7653 7.79399 22.7362 7.13888 22.7398C6.43953 22.7437 5.58295 22.6791 5.04311 22.1586C4.56881 21.7014 4.50326 20.9856 4.43869 20.3667C4.35259 19.5472 4.26724 18.7279 4.18265 17.9086L3.70803 13.3532L3.40097 10.4057C3.39581 10.357 3.39064 10.3089 3.3858 10.2598C3.34899 9.90816 3.10006 9.56398 2.70777 9.58174C2.37198 9.59659 1.99034 9.88201 2.02973 10.2598L2.25736 12.445L2.72811 16.9652C2.86221 18.2492 2.99599 19.5333 3.12944 20.8177C3.15527 21.0638 3.17948 21.3104 3.2066 21.5565C3.35416 22.9009 4.38089 23.6254 5.65237 23.8295C6.39498 23.9489 7.15567 23.9735 7.90925 23.9857C8.87529 24.0012 9.85101 24.0384 10.8012 23.8634C12.2093 23.6051 13.2657 22.6649 13.4165 21.2065C13.4595 20.7854 13.5026 20.3643 13.5456 19.9431C13.6888 18.55 13.8317 17.1568 13.9744 15.7635L14.4413 11.211L14.6554 9.12455C14.666 9.0211 14.7097 8.92382 14.78 8.84713C14.8502 8.77043 14.9433 8.71838 15.0454 8.69868C15.448 8.62022 15.8329 8.48623 16.1193 8.17982C16.5752 7.69196 16.6659 7.0559 16.5048 6.41468ZM1.35913 6.86476C1.36526 6.86186 1.35396 6.91448 1.34912 6.93902C1.34815 6.90189 1.35009 6.86896 1.35913 6.86476ZM1.39819 7.16697C1.40142 7.16471 1.41111 7.17763 1.42112 7.19312C1.40594 7.17892 1.39626 7.16826 1.39787 7.16697H1.39819ZM1.43662 7.21766C1.4505 7.24123 1.45793 7.25608 1.43662 7.21766V7.21766ZM1.51378 7.2803H1.51572C1.51572 7.28256 1.51927 7.28482 1.52056 7.28708C1.51842 7.2846 1.51604 7.28232 1.51346 7.2803H1.51378ZM15.0267 7.18667C14.882 7.32421 14.6641 7.38814 14.4487 7.4201C12.0336 7.77849 9.58335 7.95995 7.14178 7.87988C5.39439 7.82014 3.66541 7.6261 1.93545 7.38168C1.76595 7.35779 1.58223 7.32679 1.46567 7.20184C1.24612 6.96614 1.35396 6.49152 1.41111 6.20675C1.46341 5.94587 1.56351 5.59813 1.87379 5.561C2.3581 5.50418 2.92054 5.70855 3.39968 5.7812C3.97655 5.86924 4.55557 5.93973 5.13674 5.99268C7.61705 6.21869 10.139 6.1835 12.6083 5.85288C13.0584 5.79239 13.5069 5.72212 13.9538 5.64204C14.3519 5.57069 14.7932 5.4367 15.0338 5.849C15.1988 6.1299 15.2207 6.50573 15.1952 6.82311C15.1873 6.9614 15.1269 7.09145 15.0263 7.18667H15.0267Z" fill="#000000"/> <path d="M8.84348 11.1214C7.98141 11.4905 7.0031 11.9089 5.73518 11.9089C5.20476 11.9079 4.67693 11.8351 4.16602 11.6926L5.04294 20.6959C5.07398 21.0722 5.24541 21.4231 5.52319 21.6789C5.80096 21.9346 6.16477 22.0766 6.54236 22.0765C6.54236 22.0765 7.78574 22.1411 8.20064 22.1411C8.64717 22.1411 9.98612 22.0765 9.98612 22.0765C10.3637 22.0765 10.7274 21.9345 11.0051 21.6788C11.2828 21.423 11.4542 21.0722 11.4852 20.6959L12.4245 10.7469C12.0047 10.6035 11.5811 10.5083 11.1036 10.5083C10.2777 10.508 9.61224 10.7924 8.84348 11.1214Z" fill="#FFFFFF"/></g><text x="40" y="31" fill="#000000" style="     font-family: 'Cookie', cursive;     font-size: 24px;     font-weight: ;     ">Donate</text>-->
-        <!--            <g transform="translate(-98,0)">-->
-        <!--              <path opacity="0.1" d="M200.834 0H241.303C247.119 0 251.834 4.71479 251.834 10.5308V39.4692C251.834 45.2852 247.119 50 241.303 50H200.834V0Z" fill="black"/>-->
-        <!--              <path fill-rule="evenodd" clip-rule="evenodd" d="M226.294 22.1667C226.214 22.1667 225.974 22.0838 225.974 22.0838C224.213 21.1723 220.052 18.6035 218.612 14.5433C218.372 13.7976 217.812 10.7316 219.572 8.8258C220.612 7.66573 221.573 7.5 222.213 7.5C223.733 7.5 225.334 8.41149 226.294 9.73729C227.254 8.32862 228.695 7.5 230.375 7.5C231.015 7.5 231.976 7.66573 233.096 8.8258C234.856 10.7316 234.296 13.8804 234.056 14.5433C232.616 18.6864 228.375 21.1723 226.694 22.0838C226.534 22.1667 226.374 22.1667 226.294 22.1667Z" fill="white"/>-->
-        <!--              <text x="226" y="39" text-anchor="middle" fill="white" style="      font-family: Cookie,sans-serif;      font-size: 12px;      font-weight: 600;      ">11</text>-->
-        <!--            </g>-->
-        <!--          </a>-->
-        <!--        </svg>-->
         <a target="_blank" href="https://www.buymeacoffee.com/xuanlinh91" class="h-9 ml-auto py-0.5">
           <img
               src="https://img.buymeacoffee.com/button-api/?text=Donate&emoji=&slug=xuanlinh91&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000"
@@ -116,17 +100,23 @@
         <input type="file" style="display: none" ref="fileInput" @change="importLocalStorage">
       </div>
       <form @submit.prevent="onSubmitPasskey" v-if="showPassKey" class="flex gap-2 items-center mb-1 animate-pulse">
-        <input type="password" required v-model="passKey1" maxlength="1" ref="input1" @input="autoTab(1)"
+        <input required v-model="passKey1" maxlength="1" ref="input1"
+               @keyup="autoTab($event, null, 1)"
                class="pass-key-digit bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"/>
-        <input type="password" required v-model="passKey2" maxlength="1" ref="input2" @input="autoTab(2)"
+        <input required v-model="passKey2" maxlength="1" ref="input2"
+               @keyup="autoTab($event, 0, 2)"
                class="pass-key-digit bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"/>
-        <input type="password" required v-model="passKey3" maxlength="1" ref="input3" @input="autoTab(3)"
+        <input required v-model="passKey3" maxlength="1" ref="input3"
+               @keyup="autoTab($event, 1, 3)"
                class="pass-key-digit bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"/>
-        <input type="password" required v-model="passKey4" maxlength="1" ref="input4" @input="autoTab(4)"
+        <input required v-model="passKey4" maxlength="1" ref="input4"
+               @keyup="autoTab($event, 2, 4)"
                class="pass-key-digit bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"/>
-        <input type="password" required v-model="passKey5" maxlength="1" ref="input5" @input="autoTab(5)"
+        <input required v-model="passKey5" maxlength="1" ref="input5"
+               @keyup="autoTab($event, 3, 5)"
                class="pass-key-digit bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"/>
-        <input type="password" required v-model="passKey6" maxlength="1" ref="input6"
+        <input required v-model="passKey6" maxlength="1" ref="input6"
+               @keyup="autoTab($event, 4, null)"
                class="pass-key-digit bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"/>
         <button :disabled="syncingFromDrive || syncingToDrive" type="submit"
                 class="py-2 px-3 text-sm font-medium text-gray-900 focus:outline-none bg-white rounded-lg border border-gray-200 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:ring-4 focus:ring-gray-100 dark:focus:ring-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-600 dark:hover:text-white dark:hover:bg-gray-700">
@@ -214,9 +204,10 @@
               </div>
             </div>
             <div class="action-btn">
-              <button :disabled="!deletable" type="button" @click="clearLayout(layout)"
-                      class="text-white bg-orange-600 hover:bg-orange-800 font-medium rounded-full text-sm p-1 text-center inline-flex items-center me-2 dark:bg-orange-600 dark:hover:bg-orange-700 transform transition-transform duration-200 hover:scale-125">
-                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <button type="button" @click="clearLayout(layout)"
+                      class="text-white font-medium rounded-full text-sm p-1 text-center inline-flex items-center me-2 transform transition-transform duration-200 hover:scale-125">
+                <svg v-if="deletable" class="w-8 h-8 dark:text-orange-800 hover:text-orange-600" viewBox="0 0 24 24"
+                     fill="none" xmlns="http://www.w3.org/2000/svg">
                   <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
                   <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
                   <g id="SVGRepo_iconCarrier">
@@ -225,6 +216,16 @@
                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
                     </g>
                   </g>
+                </svg>
+                <svg v-if="!deletable" aria-hidden="true"
+                     class="w-5 h-5 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600" viewBox="0 0 100 101"
+                     fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path
+                      d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+                      fill="currentColor"/>
+                  <path
+                      d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+                      fill="currentFill"/>
                 </svg>
               </button>
             </div>
@@ -236,7 +237,7 @@
 </template>
 
 <script setup>
-import {onMounted, ref} from 'vue'
+import {nextTick, onMounted, ref} from 'vue'
 import dayjs from "dayjs";
 import {countTabs, hashString, localStorageDataToBlob} from "../helper/helper.js";
 import {
@@ -289,17 +290,33 @@ const dbFolderName = "lmc-database"
 // TODO allow rename layout
 // TODO khong cho thao tac khi dang sync
 
-const autoTab = (inputNumber) => {
-  inputs[inputNumber].value.focus();
+const autoTab = async (el, prevId, nextId) => {
+  // fix when fast typing passkey value is not updated
+  await nextTick();
+
+  let inputElement = el.target;
+  let inputValue = inputElement.value;
+  if (el.key === "Backspace" || el.key === "Delete" || el.key === "ArrowLeft" || el.key === "ArrowUp") {
+    if (prevId !== null) {
+      inputs[prevId].value.focus();
+    }
+  } else if (inputValue.length >= inputElement.maxLength && nextId !== null) {
+    inputs[nextId].value.focus();
+  }
 };
 
 async function onSubmitPasskey() {
-  if (decryptMode.value) {
-    console.log("decryptLayout on submit")
-    await decryptLayout()
-  } else {
-    console.log("encryptLayout on submit")
-    await encryptLayout()
+  console.log("encryptLayout on submit")
+  await encryptLayout()
+  isEncrypt.value = true
+  showPassKey.value = false
+  localStorage.setItem("is_encrypt", isEncrypt.value.toString())
+  // clear all passkey input
+  for (let i = 0; i < passKeys.length; i++) {
+    passKeys[i].value = ""
+  }
+  if (googleAccount.value && googleToken.value !== "") {
+    await syncDataToDrive(dbFolderId.value, googleToken.value);
   }
 }
 
@@ -308,72 +325,56 @@ async function encryptLayout() {
   localStorage.setItem("pass_key", joinedPassKey)
   passKey.value = joinedPassKey
 
-  // loop through layout keys, set the encrypted flag to true and encrypt the name
+  // loop through layouts and encrypt them, save to localStorage, update hash of the layout content to layoutKeys
   for (let i = 0; i < layoutKeys.value.length; i++) {
+    const layoutData = localStorage.getItem(layoutKeys.value[i].name)
+    const encryptedData = await encryptData(layoutData, passKey.value)
+    localStorage.setItem(layoutKeys.value[i].name, JSON.stringify(encryptedData))
+    layoutKeys.value[i].hash = await hashString(JSON.stringify(encryptedData) + layoutKeys.value[i].name)
     layoutKeys.value[i].encrypted = true
     layoutKeys.value[i].encryptedName = btoa(JSON.stringify(await encryptData(layoutKeys.value[i].name, passKey.value)))
   }
-  localStorage.setItem('layout_keys', JSON.stringify(layoutKeys.value))
 
-  await syncDataToDrive(dbFolderId.value, googleToken.value, true, true)
-  showPassKey.value = false
-  isEncrypt.value = true
-  localStorage.setItem("is_encrypt", "true")
+  localStorage.setItem('layout_keys', JSON.stringify(layoutKeys.value))
 }
 
 async function decryptLayout() {
   console.log("Decrypting layout")
-  const joinedPassKey = passKeys.map(passKey => passKey.value).join("")
-  localStorage.setItem("pass_key", joinedPassKey)
-  passKey.value = joinedPassKey
-
-  // try to decrypt the first layout.encryptedName with passKey to check if it's correct
-  const layoutKey = cloudLayoutKeys.value.find(layout => layout.encryptedName)
-  const layoutName = await decryptData(JSON.parse(atob(layoutKey.encryptedName)), passKey.value)
-  if (!layoutName.success) {
-    alert(layoutName.error)
-    if (!confirm("Cancel: Logout Google account\nOK: Remove all encrypted data on cloud")) {
-      await logOutGoogle(googleToken.value)
-      return;
-    }
-
-    syncingToDrive.value = true
-    const layoutKeyFile = await localStorageDataToBlob("layout_keys");
-    await persist(dbFileIds.value["layout_keys"], dbFolderId.value, layoutKeyFile, googleToken.value);
-    showPassKey.value = false
-    syncingToDrive.value = false
-    return;
-    // await unEncryptLayout()
+  for (let i = 0; i < layoutKeys.value.length; i++) {
+    const layoutData = localStorage.getItem(layoutKeys.value[i].name)
+    const decryptedData = await decryptData(JSON.parse(layoutData), passKey.value)
+    console.log("Decrypted data: ", decryptedData.data)
+    localStorage.setItem(layoutKeys.value[i].name, decryptedData.data)
+    layoutKeys.value[i].hash = await hashString(decryptedData.data + layoutKeys.value[i].name)
+    delete layoutKeys.value[i].encrypted
+    delete layoutKeys.value[i].encryptedName
   }
 
-  await syncDataFromDrive(googleToken.value)
+  localStorage.setItem('layout_keys', JSON.stringify(layoutKeys.value))
 }
 
-async function unEncryptLayout() {
-  if (!confirm("Do you want to replace current encrypted data on cloud with raw data?")) {
-    return;
-  }
-
-  localStorage.setItem("is_encrypt", "false")
+async function doUnEncrypt() {
+  await decryptLayout()
+  isEncrypt.value = false
   localStorage.removeItem("pass_key")
-  passKey.value = ""
+  localStorage.setItem("is_encrypt", isEncrypt.value.toString())
+  // clear all passkey input
   for (let i = 0; i < passKeys.length; i++) {
     passKeys[i].value = ""
   }
-
-  // loop through layout keys, set the encrypted flag to false and delete encryptedName
-  for (let i = 0; i < layoutKeys.value.length; i++) {
-    layoutKeys.value[i].encrypted = false
-    delete layoutKeys.value[i].encryptedName
+  if (googleAccount.value && googleToken.value !== "") {
+    await syncDataToDrive(dbFolderId.value, googleToken.value);
   }
-  localStorage.setItem('layout_keys', JSON.stringify(layoutKeys.value))
-
-  await syncDataToDrive(dbFolderId.value, googleToken.value, true, false)
-  isEncrypt.value = false
-  localStorage.setItem("is_encrypt", "false")
 }
 
-async function syncDataToDrive(folderId, authToken, forceSync = false, toEncrypt = false) {
+async function unEncryptLayout() {
+  if (!confirm("Do you want to un-encrypt all layout data??")) {
+    return;
+  }
+  await doUnEncrypt()
+}
+
+async function syncDataToDrive(folderId, authToken) {
   syncingToDrive.value = true
   let syncFlag = false
   if (layoutKeys.value.length === 0) {
@@ -392,8 +393,6 @@ async function syncDataToDrive(folderId, authToken, forceSync = false, toEncrypt
 
     dbFolderId.value = folderId;
     dbFileIds.value = {};
-    localStorage.setItem('db_folder_id', folderId)
-    localStorage.setItem('db_file_ids', JSON.stringify(dbFileIds.value))
 
     // Persist layout files
     for (const layoutKey of layoutKeys.value) {
@@ -403,42 +402,50 @@ async function syncDataToDrive(folderId, authToken, forceSync = false, toEncrypt
     syncFlag = true
   } else {
     // Folder exist
+    console.log("Folder exist: ", folderId)
     if (cloudLayoutKeys.value.length === 0) {
+      console.log("cloudLayoutKeys is empty")
       let layoutKeyCloudExist = await checkFileExist("layout_keys.json", authToken);
-      if (!layoutKeyCloudExist || forceSync) {
+      cloudLayoutKeys.value = await getDriveFileContent(layoutKeyCloudExist, authToken)
+      if (!layoutKeyCloudExist || cloudLayoutKeys.value.length === 0) {
         syncFlag = true
+        for (const layoutKey of layoutKeys.value) {
+          let layoutData = localStorage.getItem(layoutKey.name)
+          const file = new Blob([layoutData], {type: 'application/json'});
+          file.name = layoutKey.name + ".json"
+          dbFileIds.value[layoutKey.name] = await persist(null, folderId, file, authToken)
+        }
       } else {
         cloudLayoutKeys.value = await getDriveFileContent(layoutKeyCloudExist, authToken)
         dbFileIds.value["layout_keys"] = layoutKeyCloudExist
-        localStorage.setItem('db_file_ids', JSON.stringify(dbFileIds.value))
       }
-    }
+    } else {
+      for (const layoutKey of layoutKeys.value) {
+        const existingOnCloud = cloudLayoutKeys.value.some(layout => layout.hash === layoutKey.hash);
+        if (!existingOnCloud) {
+          let layoutData = localStorage.getItem(layoutKey.name)
+          const file = new Blob([layoutData], {type: 'application/json'});
+          file.name = layoutKey.name + ".json"
+          if (dbFileIds.value[layoutKey.name]) {
+            console.log("Changed layout: ", layoutKey.name)
+            await persist(dbFileIds.value[layoutKey.name], folderId, file, authToken)
+          } else {
+            console.log("Not exist on cloud: ", layoutKey.name)
+            dbFileIds.value[layoutKey.name] = await persist(null, folderId, file, authToken)
+          }
 
-    for (const layoutKey of layoutKeys.value) {
-      const existingOnCloud = cloudLayoutKeys.value.some(layout => layout.hash === layoutKey.hash);
-      if (!existingOnCloud || forceSync) {
-        console.log("Changed layout: ", layoutKey.name);
-        let layoutData = localStorage.getItem(layoutKey.name)
-        if (toEncrypt) {
-          layoutData = JSON.stringify(await encryptData(layoutData, passKey.value));
-        }
-        const file = new Blob([layoutData], {type: 'application/json'});
-        file.name = layoutKey.name + ".json"
-
-        // if the layout has fileId in dbFileIds, update it, else persist new file to drive
-        if (dbFileIds.value[layoutKey.name]) {
-          await persist(dbFileIds.value[layoutKey.name], dbFolderId.value, file, googleToken.value)
-        } else {
-          dbFileIds.value[layoutKey.name] = await persist(null, dbFolderId.value, file, googleToken.value)
-          // save dbFileIds to localStorage
-          localStorage.setItem('db_file_ids', JSON.stringify(dbFileIds.value))
+          syncFlag = true
         }
       }
     }
+
+    localStorage.setItem('db_folder_id', folderId)
+    localStorage.setItem('db_file_ids', JSON.stringify(dbFileIds.value))
   }
 
   // persist layoutKeys if not exist, update if exist
-  if (syncFlag || forceSync) {
+  if (syncFlag) {
+    console.log("syncFlag: ", syncFlag)
     const layoutKeyFile = await localStorageDataToBlob("layout_keys");
     if (!dbFileIds.value["layout_keys"]) {
       console.log("Persist layout_keys")
@@ -453,10 +460,7 @@ async function syncDataToDrive(folderId, authToken, forceSync = false, toEncrypt
   syncingToDrive.value = false;
 }
 
-async function logOutGoogle(authToken) {
-  if (!confirm("Signing out of your Google account will stop syncing data with Google Drive. Are you sure you want to proceed?")) {
-    return;
-  }
+async function doLogout(authToken) {
   await chrome.identity.removeCachedAuthToken({token: authToken});
   fetch(
       'https://accounts.google.com/o/oauth2/revoke?token=' + authToken)
@@ -466,26 +470,33 @@ async function logOutGoogle(authToken) {
         localStorage.removeItem('google_account')
         localStorage.removeItem('db_file_ids')
         localStorage.removeItem('db_folder_id')
-        localStorage.removeItem('pass_key')
-        localStorage.removeItem('is_encrypt')
-        localStorage.setItem('is_login', "false")
+        localStorage.setItem('is_synced', "false")
         googleToken.value = null
         googleAccount.value = null
         dbFileId.value = null
+        showPassKey.value = false
 
         // loop through layout keys, set the encrypted flag to false and delete encrypted name
         for (let i = 0; i < layoutKeys.value.length; i++) {
-          layoutKeys.value[i].encrypted = false
+          delete layoutKeys.value[i].encrypted
           delete layoutKeys.value[i].encryptedName
         }
         localStorage.setItem('layout_keys', JSON.stringify(layoutKeys.value))
       });
 }
 
+async function logOutGoogle(authToken) {
+  if (!confirm("Signing out of your Google account will stop syncing data with Google Drive. Are you sure you want to proceed?")) {
+    return;
+  }
+
+  await doLogout(authToken)
+}
+
 async function loginGoogle() {
   console.log("Login Google")
   loggingIn.value = true
-  const is_login = localStorage.getItem('is_login')
+  const is_synced = localStorage.getItem('is_synced')
   let token = await chrome.identity.getAuthToken({interactive: true});
   console.log(token);
   localStorage.setItem('google_token', token.token)
@@ -512,37 +523,27 @@ async function loginGoogle() {
     folderId = await createFolder(dbFolderName, googleToken.value);
   }
 
-  if (folderId && !(is_login === "true")) {
+  if (folderId && !(is_synced === "true")) {
     dbFolderId.value = folderId
     localStorage.setItem('db_folder_id', folderId)
   }
 
   let layoutKeyCloudExist = await checkFileExist("layout_keys.json", googleToken.value);
+  console.log("layoutKeyCloudExist: ", layoutKeyCloudExist)
   if (layoutKeyCloudExist) {
+    console.log("layoutKeyCloudExist")
     cloudLayoutKeys.value = await getDriveFileContent(layoutKeyCloudExist, googleToken.value)
     dbFileIds.value["layout_keys"] = layoutKeyCloudExist
     localStorage.setItem('db_file_ids', JSON.stringify(dbFileIds.value))
-    const encryptedFlag = cloudLayoutKeys.value.some(layout => layout.encrypted === true);
-    if (encryptedFlag && !isEncrypt.value) {
-      // tell user to enter pass key to decrypt cloud layout data
-      if (!confirm("The cloud layout data is encrypted, please enter the pass key to decrypt it.")) {
-        await logOutGoogle(googleToken.value)
-        return;
-      }
 
-      decryptMode.value = true
-      showPassKey.value = true
-      return;
+    if (!is_synced || is_synced === "false") {
+      await syncDataFromDrive(googleToken.value);
     }
-
-    await syncDataFromDrive(googleToken.value)
   }
 
-  if (layoutKeys.value.length > 0 && !(is_login === "true")) {
+  if (layoutKeys.value.length > 0 && !(is_synced === "true")) {
     await syncDataToDrive(folderId, googleToken.value)
   }
-
-  localStorage.setItem('is_login', "true");
 }
 
 
@@ -559,67 +560,120 @@ const syncDataFromDrive = async (authToken) => {
         cloudLayoutKeys.value = await getDriveFileContent(layoutKeyCloudExist, authToken)
         dbFileIds.value["layout_keys"] = layoutKeyCloudExist
         localStorage.setItem('db_file_ids', JSON.stringify(dbFileIds.value))
+        if (cloudLayoutKeys.value.length === 0) return
       }
 
+      // If cloud layout data is not encrypted, local layout data is not encrypted
       // Compare cloudLayoutKeys with layoutKeys base on hash
       const notMatchingElements = cloudLayoutKeys.value.filter(content => {
         const matchingKey = layoutKeys.value.find(key => key.hash === content.hash);
         return !matchingKey; // Return true if no match is found
       });
 
+      // get fileId of matching elements and save to dbFileIds
+      for (const matchingElement of cloudLayoutKeys.value) {
+        const matchingKey = layoutKeys.value.find(key => key.hash === matchingElement.hash);
+        if (matchingKey) {
+          console.log("matchingKey: ", matchingKey.name)
+          dbFileIds.value[matchingKey.name] = await checkFileExist(matchingElement.name + ".json", authToken)
+          console.log("matchingKey fileId: ", dbFileIds.value[matchingKey.name])
+        }
+      }
+
       if (notMatchingElements.length > 0) {
         const cloudLayoutFiles = await listFolderJsonFiles(dbFolderId.value, authToken);
-        console.log("cloudLayoutFiles")
-        console.log(cloudLayoutFiles)
+        console.log("cloudLayoutFiles", cloudLayoutFiles)
         if (cloudLayoutFiles.length > 0) {
           for (const layoutFile of cloudLayoutFiles) {
             // Check if layoutFile.name is in notMatchingElements
             const layoutFileName = layoutFile.name.replace(".json", "");
-            const existOnCloudNotOnLocal = notMatchingElements.find(element => element.name === layoutFileName);
-
+            let existOnCloudNotOnLocal = notMatchingElements.find(element => element.name === layoutFileName);
             if (existOnCloudNotOnLocal) {
+              // create a clone of existOnCloudNotOnLocal
+              existOnCloudNotOnLocal = JSON.parse(JSON.stringify(existOnCloudNotOnLocal));
               console.log(`The layout file ${layoutFileName} is in cloud but not in local. Add it to local storage.`);
               // Check if the layoutFileName is not in local storage
               const nameDuplicate = layoutKeys.value.find(layout => layout.name === layoutFileName);
               // If name is duplicated then change the name of layoutFile
               if (nameDuplicate) {
-                existOnCloudNotOnLocal.name += +"_cloud";
+                existOnCloudNotOnLocal.name += "_cloud";
               }
+
+              let layoutContent = await getDriveFileContent(layoutFile.id, authToken);
+              if (!isEncrypt.value) {
+                if (existOnCloudNotOnLocal.encrypted === true) {
+                  let cloudPasskey = prompt("Enter passkey to decrypt cloud layout data.");
+                  console.log("cloudPasskey", cloudPasskey)
+                  if (cloudPasskey != null && cloudPasskey !== "") {
+                    // let layoutContent = await getDriveFileContent(layoutFile.id, authToken);
+                    const decryptResult = await decryptData(layoutContent, cloudPasskey)
+                    if (decryptResult.success) {
+                      layoutContent = JSON.parse(decryptResult.data);
+                      delete existOnCloudNotOnLocal.encrypted
+                      delete existOnCloudNotOnLocal.encryptedName
+                    } else {
+                      alert("Error decrypting layout content, passkey is not correct. Logout now!");
+                      console.log(decryptResult)
+                      await doLogout(authToken)
+                      return
+                    }
+                  }
+                }
+              } else {
+                if (existOnCloudNotOnLocal.encrypted === true) {
+                  // Try to use local passkey to decrypt
+                  let decryptResult = await decryptData(layoutContent, passKey.value)
+                  if (decryptResult.success) {
+                    layoutContent = JSON.parse(decryptResult.data);
+                  } else {
+                    let cloudPasskey = prompt("Enter passkey to decrypt cloud layout data.");
+                    console.log("cloudPasskey", cloudPasskey)
+                    if (cloudPasskey != null && cloudPasskey !== "") {
+                      console.log(layoutContent)
+                      decryptResult = await decryptData(layoutContent, cloudPasskey)
+                      console.log(decryptResult)
+                      if (decryptResult.success) {
+                        layoutContent = JSON.parse(decryptResult.data);
+                        console.log("Encrypting layout content")
+                        layoutContent = await encryptData(JSON.stringify(layoutContent), passKey.value)
+                        existOnCloudNotOnLocal.encrypted = true
+                        existOnCloudNotOnLocal.encryptedName = btoa(JSON.stringify(await encryptData(existOnCloudNotOnLocal.name, passKey.value)))
+                      } else {
+                        alert("Error decrypting layout content, passkey is not correct. Logout now!");
+                        console.log(decryptResult)
+                        await doLogout(authToken)
+                        return
+                      }
+                    }
+                  }
+                }
+              }
+
+              //Update the hash of existOnCloudNotOnLocal layout with name and layoutContent
+              existOnCloudNotOnLocal.hash = await hashString(JSON.stringify(layoutContent) + existOnCloudNotOnLocal.name);
               // Add new layout to the beginning of layout_keys array
               layoutKeys.value.unshift(existOnCloudNotOnLocal);
 
-              // Add new layout to localStorageData
-              let layoutContent = await getDriveFileContent(layoutFile.id, authToken)
-              if (existOnCloudNotOnLocal.encrypted === true) {
-                layoutContent = await decryptData(layoutContent, passKey.value)
-                if (layoutContent.success) {
-                  layoutContent = JSON.parse(layoutContent.data);
-                }
-              }
-              localStorage.setItem(layoutFileName, JSON.stringify(layoutContent));
-              dbFileIds.value[layoutFileName] = layoutFile.id
+              localStorage.setItem(existOnCloudNotOnLocal.name, JSON.stringify(layoutContent));
+              dbFileIds.value[existOnCloudNotOnLocal.name] = layoutFile.id
             }
           }
-
-          localStorage.setItem("layout_keys", JSON.stringify(layoutKeys.value));
-          localStorage.setItem("db_file_ids", JSON.stringify(dbFileIds.value));
         }
       }
 
-      const encryptedFlag = cloudLayoutKeys.value.some(layout => layout.encrypted === true);
-      if (encryptedFlag) {
-        isEncrypt.value = true
-      }
-      localStorage.setItem("is_encrypt", JSON.stringify(isEncrypt.value));
+      localStorage.setItem("layout_keys", JSON.stringify(layoutKeys.value));
+      localStorage.setItem("db_file_ids", JSON.stringify(dbFileIds.value));
+
       console.log("complete sync from drive");
     } else {
-      console.warn("Initializing cloud database...");
-      await syncDataToDrive(null, authToken)
+      // console.warn("Initializing cloud database...");
+      // await syncDataToDrive(null, authToken)
     }
   } catch (error) {
     console.error("Error syncing data from Google Drive:", error);
   } finally {
     syncingFromDrive.value = false
+    localStorage.setItem('is_synced', "true");
   }
 };
 
@@ -672,7 +726,7 @@ function importLocalStorage(event) {
     });
 
     if (googleToken.value && dbFolderId.value) {
-      await syncDataToDrive(dbFolderId.value, googleToken.value, false, isEncrypt.value)
+      await syncDataToDrive(dbFolderId.value, googleToken.value)
     }
 
     console.log('LocalStorage data imported successfully.');
@@ -707,7 +761,6 @@ async function saveLayout() {
       createdAt: dayjs().format("DD/MM/YYYY"),
       numberOfTab: numberOfTab,
       hash: layoutHash,
-      encrypted: false
     }
 
     // if local isEncrypt value is true, encrypt the layout name and set the encrypted flag to true
@@ -715,6 +768,7 @@ async function saveLayout() {
       layoutObject.encrypted = true
       layoutObject.encryptedName = btoa(JSON.stringify(await encryptData(newLayoutName, passKey.value))
       )
+      windows = await encryptData(JSON.stringify(windows), passKey.value)
     }
 
     layoutKeys.value.push(layoutObject);
@@ -815,6 +869,15 @@ async function loadWindows(key) {
   windows = JSON.parse(windows);
   if (windows === null)
     return;
+  if (isEncrypt.value) {
+    const layoutData = await decryptData(windows, passKey.value)
+    if (layoutData.success) {
+      windows = JSON.parse(layoutData.data)
+    } else {
+      alert("Error decrypting layout data.")
+      return;
+    }
+  }
 
   for (let index = 0; index < windows.length; index++) {
     let windowParams = {
@@ -856,7 +919,7 @@ onMounted(async () => {
   init()
   if (localStorage.getItem('google_token')) {
     await loginGoogle()
-    deletable.value = true
   }
+  deletable.value = true
 })
 </script>

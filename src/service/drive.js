@@ -74,6 +74,8 @@ async function uploadFile(folderId, uploadFile, accessToken) {
 }
 
 async function updateFile(folderId, fileId, uploadFile, accessToken) {
+    console.log("Update file:")
+    console.log(uploadFile.name)
     const metadata = {
         name: uploadFile.name, mimeType: "application/json",
     };
@@ -127,7 +129,7 @@ export async function getDriveFileContent(fileId, accessToken) {
 }
 
 export async function listFolderJsonFiles(folderID, accessToken) {
-    const endpoint = DRIVE_API_URL + "?q=\'" + folderID + "\'+in+parents&mimeType=\'application/json\'"
+    const endpoint = DRIVE_API_URL + "?q=trashed = false and \'" + folderID + "\'+in+parents&mimeType=\'application/json\'"
     const folderFiles = await fetch(endpoint, {
         method: 'GET', headers: {
             'Authorization': `Bearer ${accessToken}`
