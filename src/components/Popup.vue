@@ -284,14 +284,12 @@ const cloudLayoutKeys = ref([])
 const showPassKey = ref(false)
 const isEncrypt = ref(false)
 const deletable = ref(false)
-const decryptMode = ref(false)
 const dbFolderName = "lmc-database"
 
 // TODO allow rename layout
-// TODO khong cho thao tac khi dang sync
+// TODO compared encrypted layout and unencrypted layout
 
 const autoTab = async (el, prevId, nextId) => {
-  // fix when fast typing passkey value is not updated
   await nextTick();
 
   let inputElement = el.target;
@@ -343,7 +341,6 @@ async function decryptLayout() {
   for (let i = 0; i < layoutKeys.value.length; i++) {
     const layoutData = localStorage.getItem(layoutKeys.value[i].name)
     const decryptedData = await decryptData(JSON.parse(layoutData), passKey.value)
-    console.log("Decrypted data: ", decryptedData.data)
     localStorage.setItem(layoutKeys.value[i].name, decryptedData.data)
     layoutKeys.value[i].hash = await hashString(decryptedData.data + layoutKeys.value[i].name)
     delete layoutKeys.value[i].encrypted
@@ -403,10 +400,12 @@ async function syncDataToDrive(folderId, authToken) {
   } else {
     // Folder exist
     console.log("Folder exist: ", folderId)
+    let layoutKeyCloudExist = await checkFileExist("layout_keys.json", authToken);
+    cloudLayoutKeys.value = await getDriveFileContent(layoutKeyCloudExist, authToken)
+    dbFileIds.value["layout_keys"] = layoutKeyCloudExist
+
     if (cloudLayoutKeys.value.length === 0) {
       console.log("cloudLayoutKeys is empty")
-      let layoutKeyCloudExist = await checkFileExist("layout_keys.json", authToken);
-      cloudLayoutKeys.value = await getDriveFileContent(layoutKeyCloudExist, authToken)
       if (!layoutKeyCloudExist || cloudLayoutKeys.value.length === 0) {
         syncFlag = true
         for (const layoutKey of layoutKeys.value) {
@@ -416,8 +415,6 @@ async function syncDataToDrive(folderId, authToken) {
           dbFileIds.value[layoutKey.name] = await persist(null, folderId, file, authToken)
         }
       } else {
-        cloudLayoutKeys.value = await getDriveFileContent(layoutKeyCloudExist, authToken)
-        dbFileIds.value["layout_keys"] = layoutKeyCloudExist
       }
     } else {
       for (const layoutKey of layoutKeys.value) {
@@ -665,9 +662,6 @@ const syncDataFromDrive = async (authToken) => {
       localStorage.setItem("db_file_ids", JSON.stringify(dbFileIds.value));
 
       console.log("complete sync from drive");
-    } else {
-      // console.warn("Initializing cloud database...");
-      // await syncDataToDrive(null, authToken)
     }
   } catch (error) {
     console.error("Error syncing data from Google Drive:", error);
@@ -715,7 +709,6 @@ function openFileInput() {
 function importLocalStorage(event) {
   const file = event.target.files[0];
   const reader = new FileReader();
-  // TODO merge when import
   reader.onload = async () => {
     const localStorageData = JSON.parse(reader.result + "");
     layoutKeys.value = localStorageData["layout_keys"]
