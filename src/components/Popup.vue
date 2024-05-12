@@ -5,7 +5,7 @@
       <div>
         <h5 class="text-2xl font-bold leading-none text-gray-900 dark:text-white mb-2">Layout Manager Cloud</h5>
         <span
-            class="w-fit bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-gray-700 dark:text-gray-300">1.2.0</span>
+            class="w-fit bg-gray-100 text-gray-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded-full dark:bg-gray-700 dark:text-gray-300">1.4.0</span>
       </div>
       <button :disabled="loggingIn" v-if="!googleAccount" @click="loginGoogle"
               class="px-2 py-1 border flex gap-1 items-center border-emerald-200 dark:border-emerald-700 rounded-lg text-slate-700 dark:text-slate-200 hover:border-emerald-400 dark:hover:border-emerald-500 hover:text-slate-900 dark:hover:text-slate-300 hover:shadow transition duration-150">
@@ -313,7 +313,7 @@ async function onSubmitPasskey() {
   for (let i = 0; i < passKeys.length; i++) {
     passKeys[i].value = ""
   }
-  if (googleAccount.value && googleToken.value !== "") {
+  if (googleAccount.value && googleToken.value !== "" && layoutKeys.value.length > 0) {
     await syncDataToDrive(dbFolderId.value, googleToken.value);
   }
 }
@@ -359,7 +359,7 @@ async function doUnEncrypt() {
   for (let i = 0; i < passKeys.length; i++) {
     passKeys[i].value = ""
   }
-  if (googleAccount.value && googleToken.value !== "") {
+  if (googleAccount.value && googleToken.value !== ""  && layoutKeys.value.length > 0) {
     await syncDataToDrive(dbFolderId.value, googleToken.value);
   }
 }
@@ -708,15 +708,66 @@ function openFileInput() {
 // Function to import localStorage data from a JSON file
 function importLocalStorage(event) {
   const file = event.target.files[0];
+  let importPasskey = passKey.value;
   const reader = new FileReader();
   reader.onload = async () => {
     const localStorageData = JSON.parse(reader.result + "");
-    layoutKeys.value = localStorageData["layout_keys"]
+    console.log("localStorageData")
+    console.log(localStorageData)
+    console.log(localStorageData['layout_1'])
+    const importLayoutKeys = localStorageData["layout_keys"]
+
+    // Check if import layout data is encrypted and isEncrypt value is false then ask user for passcode to decrypt
+    const importLayoutEncrypted = importLayoutKeys.some(layout => layout.encrypted === true);
+    if (importLayoutEncrypted) {
+      // Try to the first layout encryptedName in layoutKey with passkey
+      const firstLayout = importLayoutKeys.find(layout => layout.encrypted === true);
+      const decryptedName = await decryptData(JSON.parse(atob(firstLayout.encryptedName)), importPasskey)
+      if (!decryptedName.success) {
+        const passkey = prompt("Enter passkey to decrypt imported layout data.");
+        if (passkey != null && passkey !== "") {
+          const decryptedName = await decryptData(JSON.parse(atob(firstLayout.encryptedName)), passkey)
+          if (!decryptedName.success) {
+            alert("Error decrypting layout content, passkey is not correct. Please try again.");
+            return;
+          } else importPasskey = passkey
+        } else {
+          alert("Passkey is required to decrypt imported layout data.");
+          return;
+        }
+      }
+    }
 
     // Loop through localStorageData and set data to localStorage
-    Object.keys(localStorageData).forEach(localStorageKey => {
-      localStorage.setItem(localStorageKey, JSON.stringify(localStorageData[localStorageKey]));
-    });
+    for (let localStorageKey of Object.keys(localStorageData)) {
+      if (localStorageKey !== 'layout_keys') {
+        let layoutContent = localStorageData[localStorageKey];
+        if (importLayoutEncrypted) {
+          const rs = await decryptData(layoutContent, importPasskey)
+          if (!rs.success) {
+            alert("Error decrypting layout content, passkey is not correct. Please try again.");
+            return;
+          }
+          layoutContent = rs.data;
+        }
+
+        if (isEncrypt.value && passKey.value !== "") {
+          // Encrypt layout content with local passkey
+          layoutContent = JSON.stringify(await encryptData(JSON.stringify(layoutContent), passKey.value))
+        }
+
+        localStorage.setItem(localStorageKey, layoutContent);
+      }
+    }
+
+    if (!isEncrypt.value) {
+      importLayoutKeys.forEach(layout => {
+        delete layout.encrypted
+        delete layout.encryptedName
+      })
+    }
+    layoutKeys.value = importLayoutKeys;
+    localStorage.setItem('layout_keys', JSON.stringify(importLayoutKeys))
 
     if (googleToken.value && dbFolderId.value) {
       await syncDataToDrive(dbFolderId.value, googleToken.value)
