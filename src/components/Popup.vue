@@ -404,7 +404,7 @@ async function syncDataToDrive(folderId, authToken) {
     cloudLayoutKeys.value = await getDriveFileContent(layoutKeyCloudExist, authToken)
     dbFileIds.value["layout_keys"] = layoutKeyCloudExist
 
-    if (cloudLayoutKeys.value.length === 0) {
+    if (!cloudLayoutKeys.value || cloudLayoutKeys.value.length === 0) {
       console.log("cloudLayoutKeys is empty")
       if (!layoutKeyCloudExist || cloudLayoutKeys.value.length === 0) {
         syncFlag = true
@@ -415,6 +415,7 @@ async function syncDataToDrive(folderId, authToken) {
           dbFileIds.value[layoutKey.name] = await persist(null, folderId, file, authToken)
         }
       } else {
+        // TODO write logic here
       }
     } else {
       for (const layoutKey of layoutKeys.value) {
